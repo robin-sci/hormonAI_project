@@ -1,391 +1,412 @@
 ![hormonAI](hormonAI_transparent.png)
 
-*A compassionate, clincally validated chatbot for adjuvant hormone therapy*
+*A compassionate, clinically validated chatbot for adjuvant hormone therapy*
 
-hormonAI is a **Retrieval-Augmented Generation (RAG) chatbot** built on a curated medical knowledge base (FAQ **and** reference articles) about **adjuvant hormone therapy for breast cancer**. In the chat interface the assistant is presented as **Mona**.
+hormonAI is a **Retrieval-Augmented Generation (RAG) chatbot** that answers patient questions about **adjuvant hormone therapy for breast cancer** from a curated knowledge base (FAQ **and** reference articles), in **English and French**. In the chat interface the assistant is presented as **Mona**.
 
-It is designed to:
-- Answer **only** from the provided knowledge base (FAQ + articles)
-- Be **multilingual** (English / French) in one shared embedding space
-- Offer both a **CLI chatbot** and a **Streamlit GUI**
-- Prioritize **safety, transparency, and source citation**
+- Answers **only** from the knowledge base; politely declines everything else
+- Shows **where every answer comes from**
+- Runs **fully locally**: embeddings, reranker and the optional LLM all run on your machine
+- Ships with a **CLI**, a **Streamlit GUI** and an **evaluation harness**
 
-## Features
-- Shared multilingual space (EN/FR): same-language answers preferred, with a cross-lingual recall fallback that carries a clear "only available in <language>" notice (content is quoted verbatim, never machine-translated)
-- Type-aware ingestion: atomic FAQ Q/A pairs and long-form articles (heading-split, parent-linked chunks) in one unified index
-- Hybrid retrieval: dense vector search + BM25 (keyword), fused with Reciprocal Rank Fusion, then optional CrossEncoder reranking
-- Semantic-first gating with IDF-weighted anchors (no hand-maintained stopword/generic lists)
-- Model-agnostic embeddings (mpnet, BGE-M3, e5, ...) selected with one setting
-- Source transparency: every answer's knowledge-base origin is shown in the "Sources used for this answer" panel (GUI) or printed after the answer (CLI), kept out of the answer body itself
-- LLM toggle: verbatim quotes vs grounded LLM rephrasing (rewrites ONLY the retrieved text for clarity + empathy, never adding facts; falls back to verbatim if the LLM is unavailable)
-- Compassion guardrail: patient-facing answers reframe mortality phrasing into survival language ("dying from breast cancer" -> "improving long-term survival") without changing meaning, and a leading LLM meta-preamble ("Here is a clear and compassionate response...") is stripped
-- Safety guardrails: out-of-scope questions are declined
-- Language scope: retrieve from the combined index with cross-lingual fallback, or restrict to the query-language corpus only (`--retrieval-scope`)
-- Optional per-query latency instrumentation and PHI-free latency logging for p50/p95 tracking
-- Queries are logged for auditing and source material improvement
-
-## Knowledge base
-[HormonAI corpus](https://www.dropbox.com/scl/fo/wufdoiep8biwrrjygfska/AAnfOC0u-pUUPFAuDTzhncI?rlkey=u2fn41qvhf0vuo7az0vms6tnt&dl=0)
-
-## Scoring
-
-1) Hybrid retrieval produces a fused score
-
-For every query, `HybridFAQRetriever.retrieve()` runs **four retrieval channels** and keeps the top `top_k` (default 40) from each:
-
-Each item is either a **FAQ** Q/A pair or an **article** chunk; both are stored in one schema (`question`/`answer`), so the channels apply to the whole knowledge base:
-
-1. **BM25** (sparse) over the tokenized full text (*heading/section + question/title + answer/body*) — for both FAQs and article chunks.
-2. **FAISS over "topic" embeddings** — the FAQ question, or (for an article chunk, which has no question) the heading plus the chunk's leading text as a topic proxy.
-3. **FAISS over "full" embeddings** — FAQ question+answer, or article heading + full chunk body.
-4. **FAISS over "topic+paraphrases" embeddings** — the topic side augmented with question paraphrases when present (equals the topic index otherwise).
-
-The three dense channels are searched with the **same** encoded query vector (encoded once). Each channel returns a top-k ranked list of candidate indices, combined with **Reciprocal Rank Fusion (RRF)**:
-
-* For each candidate `idx`, sum `rrf(rank) = 1 / (60 + rank)` across **all four** channels (BM25 + topic + full + topic+paraphrases).
-
-That sum is stored as `RetrievalCandidate.fused_score` — a **rank-fusion score**, not a similarity; useful for ordering, no standalone meaning. Retrieval also retains, per candidate, the best dense cosine similarity across the FAISS channels as `RetrievalCandidate.dense_sim` (used by the gate below).
-
-2) Reranking (on by default) produces rerank_score
-
-Reranking is **on by default** (`--rerank`; disable with `--no-rerank`). If the CrossEncoder loads:
-* Pairs `(user_query, section + question + answer)` are scored by the cross-encoder,
-* stored as `RetrievalCandidate.rerank_score`, and the candidates are re-sorted by it, overriding the fused ordering.
-
-The reranker model is configurable via `HORMONAI_RERANK_MODEL` (recommended: `BAAI/bge-reranker-v2-m3`). So: `fused_score` = first-pass hybrid ordering; `rerank_score` = second-pass reordering.
-
-3) Answer / abstain decision (semantic-first)
-
-The decision to answer or abstain is **semantic-first**: the primary signal is the CrossEncoder `rerank_score` (when reranking is on, threshold `--rerank-threshold` / `HORMONAI_RERANK_THRESHOLD`) or dense cosine `dense_sim` (otherwise, threshold `--sem-threshold`). IDF-weighted lexical anchors no longer gate the answer; they only shape multi-concept bundles and provide a recall safety net for rare, highly specific terms (`--dense-floor`). An answer bundles up to 3 relevant sources. Thresholds are model-specific and must be calibrated on the gold eval set. See `RETRIEVAL_REVIEW.md` for the full design.
+> hormonAI provides general information and is not medical advice. Patients should discuss their treatment with their care team.
 
 ---
 
-## Repository structure
-```text
-.
-├── ingest.py              # Type-aware, model-agnostic ingestion (FAQ + articles, shared index)
-├── ingest_faq.py          # Legacy FAQ-only ingestion (still supported)
-├── rag_core.py            # Core RAG logic (retriever, IDF anchors, semantic-first gate, cross-lingual fallback)
-├── chatbot.py             # Command-line chatbot
-├── hormonai_app.py        # Streamlit GUI
-├── audit_logger.py        # Query logger
-├── manifest.json          # Ingestion manifest (document, type, lang)
-├── RETRIEVAL_REVIEW.md    # Retrieval design notes and change log
-├── hormonAI.png           # Logo (used by the GUI)
-├── data/                  # Generated indexes
-│   ├── kb_all_*          # Combined SHARED multilingual index (FAISS q/qa/qp + BM25 + qa.pkl)
-│   ├── kb_{lang}_*.faiss # Per-language FAISS indexes
-│   └── kb_{lang}_*.pkl   # Per-language metadata / BM25
-├── tests/                 # Evaluation harness + gold set
-│   ├── eval_set.jsonl     # Gold-standard eval cases (EN + FR, categorized)
-│   ├── eval_retrieval.py  # Runs the gold set: recall@k, false-answer/abstention rates
-│   ├── pdf_fidelity.py    # PDF extraction QA (per-source metrics + preview)
-│   └── inspect_qa.py
-├── tools/                 # Operational helpers
-│   └── latency_report.py  # p50/p95/p99 latency from the audit log
-├── corpus/                # Source knowledge base (FAQ + articles), by language
-│   ├── en/                # e.g. FAQ_Hormono_EN.docx, *.pdf articles
-│   └── fr/                # e.g. FAQ_Hormono_FR.docx, *.pdf articles
-└── README.md
+## Contents
+
+1. [How it works](#how-it-works)
+2. [Quickstart](#quickstart)
+3. [Knowledge base and ingestion](#knowledge-base-and-ingestion)
+4. [Retrieval and scoring](#retrieval-and-scoring)
+5. [Answering: abstain, language fallback, LLM](#answering-abstain-language-fallback-llm)
+6. [Running the CLI and the GUI](#running-the-cli-and-the-gui)
+7. [Models](#models)
+8. [Configuration reference](#configuration-reference)
+9. [Evaluation and quality checks](#evaluation-and-quality-checks)
+10. [Logging, privacy and latency](#logging-privacy-and-latency)
+11. [Repository structure](#repository-structure)
+
+---
+
+## How it works
+
+The system has two phases: **ingestion** (offline, run once per corpus or model change) builds the indexes; **answering** (per question) retrieves candidates, decides whether the knowledge base really answers the question, and formats the reply.
+
+```mermaid
+flowchart TB
+    subgraph OFFLINE["① Ingestion (offline)"]
+        direction LR
+        M["manifest.json<br/>(path, type, lang)"] --> ING["ingest.py"]
+        C1["corpus/en, corpus/fr<br/>FAQ .docx · articles .pdf/.docx/.md/.txt"] --> ING
+        ING -->|"FAQ → one chunk per Q/A<br/>article → heading split + overlapping chunks"| ITEMS["Unified items<br/>(id, lang, section, question, answer, ...)"]
+        ITEMS --> EMB["Embedding model<br/>(sentence-transformers, local)"]
+        EMB --> IDX
+        ITEMS --> IDX
+        subgraph IDX["data/ — kb_all_* (shared) and kb_en_* / kb_fr_*"]
+            direction TB
+            I1["BM25 index<br/>*_bm25.pkl"]
+            I2["FAISS topic<br/>*_index_q.faiss"]
+            I3["FAISS topic+paraphrases<br/>*_index_qp.faiss"]
+            I4["FAISS full Q+A<br/>*_index_qa.faiss"]
+            I5["Items + metadata<br/>*_qa.pkl"]
+        end
+    end
+
+    subgraph ONLINE["② Answering (per question) — rag_core.py"]
+        direction TB
+        UI["chatbot.py (CLI)<br/>hormonai_app.py (Streamlit GUI, 'Mona')"] -->|question + language| RET
+        RET["HybridFAQRetriever.retrieve()<br/>4 channels, top_k each"] --> RRF["Reciprocal Rank Fusion<br/>Σ 1/(60+rank)"]
+        RRF --> RR["CrossEncoder rerank<br/>(top-N, on by default)"]
+        RR --> GATE{"answer_query()<br/>semantic-first gate"}
+        GATE -->|"same-language match"| BUNDLE["Answer bundle<br/>(up to 3 sources)"]
+        GATE -->|"only other language matches<br/>(shared scope)"| XL["Cross-lingual bundle<br/>+ 'only available in …' notice"]
+        GATE -->|"no grounded match"| ABS["Polite decline<br/>build_abstain()"]
+        XL --> FMT
+        BUNDLE --> FMT{"LLM enabled?"}
+        FMT -->|no| VERB["Verbatim source text"]
+        FMT -->|yes| LLM["Ollama (local)<br/>grounded rephrase"]
+        LLM -->|"unreachable / empty"| VERB
+        LLM --> POST
+        VERB --> POST["Guardrails<br/>survival reframe · strip LLM preamble"]
+        POST --> OUT["Answer + 'Sources used' panel"]
+        ABS --> OUT
+    end
+
+    IDX -. loaded at startup .-> RET
+    OUT --> UI
+    UI --> LOG["audit_logger.py<br/>logs/audit.jsonl"]
+    LOG --> LAT["tools/latency_report.py<br/>p50/p95/p99"]
+    EVAL["tests/eval_retrieval.py<br/>+ tests/eval_set.jsonl"] -->|runs the real pipeline| GATE
 ```
 
-## Create a virtual environment and install dependencies
+| Module | Role |
+|---|---|
+| `ingest.py` | Type-aware ingestion: parses FAQ and article documents, chunks them, embeds them and writes the indexes. |
+| `ingest_faq.py` | Legacy FAQ-only ingestion (writes `faq_{lang}_*`); can generate question paraphrases with Ollama. |
+| `rag_core.py` | Retrieval (`HybridFAQRetriever`), answer/abstain decision (`answer_query`), LLM rephrasing (`LLMWrapperWriter`), guardrails. |
+| `chatbot.py` | Interactive command-line chatbot. |
+| `hormonai_app.py` | Streamlit GUI with language switching, LLM toggle, conversation history and a sources panel. |
+| `audit_logger.py` | JSONL audit log of queries and decisions. |
+| `tools/latency_report.py` | Latency percentiles from the audit log. |
+| `tests/` | Gold eval set, evaluation harness, PDF extraction checks. |
+
+---
+
+## Quickstart
+
 ```bash
+# 1. Environment
 python3 -m venv hormonai_env
-
 source hormonai_env/bin/activate
-
 pip install -r requirements.txt
+
+# 2. Choose models (must be the same for ingestion and querying)
+export HORMONAI_EMBEDDING_MODEL="BAAI/bge-m3"
+export HORMONAI_RERANK_MODEL="BAAI/bge-reranker-v2-m3"
+
+# 3. Put the source documents under corpus/en and corpus/fr, list them in manifest.json,
+#    then build the indexes
+python ingest.py --manifest manifest.json --embedding-model "$HORMONAI_EMBEDDING_MODEL"
+
+# 4. Chat
+python chatbot.py -l en                 # CLI
+streamlit run hormonai_app.py           # GUI
 ```
 
-## Ingest the knowledge base (FAQ + articles)
+The source documents are available here: [HormonAI corpus](https://www.dropbox.com/scl/fo/wufdoiep8biwrrjygfska/AAnfOC0u-pUUPFAuDTzhncI?rlkey=u2fn41qvhf0vuo7az0vms6tnt&dl=0). The `corpus/` directory is not tracked in git.
 
-`ingest.py` is the current, type-aware ingester. It handles two document shapes and writes one unified, lang-tagged index:
+Optional: for LLM rephrasing, install and start [Ollama](https://ollama.com/download) and run `ollama pull llama3.2` (see [LLM rephrasing](#optional-llm-rephrasing)).
 
-- **FAQ** documents (`.docx`): parsed into atomic Q/A pairs.
-- **Article** documents (`.docx`, `.md`, `.txt`, `.pdf`): split on their own headings where available (docx styles / markdown `#`), then into fixed-size overlapping child chunks that keep a heading breadcrumb and a link to their parent section. PDFs carry no reliable heading structure, so each PDF is treated as one flowing document and chunked directly. PDF text is extracted with **PyMuPDF** (falling back to `pypdf`) and cleaned (running headers/footers removed, hyphenated line-wraps rejoined, page-number lines dropped).
+---
 
-Sources are declared in a JSON manifest that tags each file's `type` and `lang`. A local knowledge-base directory (e.g. `corpus/`) is referenced by pointing the manifest paths at it:
+## Knowledge base and ingestion
+
+### Document types
+
+`ingest.py` handles two document shapes and writes **one unified, language-tagged index**:
+
+- **FAQ** (`.docx`): parsed into atomic Q/A pairs, one chunk per question.
+- **Article** (`.docx`, `.md`, `.txt`, `.pdf`): split on the document's own headings where available (docx styles, markdown `#`), then into fixed-size overlapping child chunks (default 250 words, 40 overlap). Each chunk keeps a heading breadcrumb and a link to its parent section. PDFs have no reliable heading structure, so each PDF is chunked as one flowing document. PDF text is extracted with **PyMuPDF** (falling back to `pypdf`) and cleaned: running headers/footers removed, hyphenated line wraps rejoined, page-number lines dropped.
+
+### Manifest
+
+Sources are declared in a JSON manifest that tags each file's `type` and `lang`:
 
 ```json
 [
   {"path": "corpus/en/FAQ_Hormono_EN.docx", "type": "faq",     "lang": "en"},
-  {"path": "corpus/en/BCN-Tamoxifen.pdf",             "type": "article", "lang": "en"},
-  {"path": "corpus/fr/FAQ_Hormono_FR.docx",  "type": "faq",     "lang": "fr"},
-  {"path": "corpus/fr/SCC-HT.pdf",                    "type": "article", "lang": "fr"}
+  {"path": "corpus/en/BCN-Tamoxifen.pdf",   "type": "article", "lang": "en"},
+  {"path": "corpus/fr/FAQ_Hormono_FR.docx", "type": "faq",     "lang": "fr"},
+  {"path": "corpus/fr/SCC-HT.pdf",          "type": "article", "lang": "fr"}
 ]
 ```
 
-### Set the models (embedding + reranker)
+### Build the indexes
 
-The embedding model must be identical at ingestion and query time. Export the models once so ingestion, the CLI, and the GUI all pick them up automatically:
+By default `ingest.py` builds **both** the combined multilingual index (`kb_all_*`) and the per-language indexes (`kb_en_*`, `kb_fr_*`):
 
 ```bash
-export HORMONAI_EMBEDDING_MODEL="BAAI/bge-m3"            # dense embeddings (must match ingest)
-export HORMONAI_RERANK_MODEL="BAAI/bge-reranker-v2-m3"   # cross-encoder reranker (recommended)
+python ingest.py --manifest manifest.json --embedding-model "BAAI/bge-m3"
+
+# larger article chunks, shared index only
+python ingest.py --manifest manifest.json --embedding-model "BAAI/bge-m3" \
+  --chunk-size 300 --chunk-overlap 50 --no-per-language
+
+# A/B a second model into a separate prefix (kb_bgem3_all_*, ...)
+python ingest.py --manifest manifest.json --embedding-model "BAAI/bge-m3" --out-prefix kb_bgem3
+
+# quick run without a manifest
+python ingest.py --language en --faq corpus/en/FAQ_Hormono_EN.docx \
+  --article corpus/en/BCN-Tamoxifen.pdf --embedding-model "BAAI/bge-m3"
 ```
 
-The recommended stack is **BGE-M3** embeddings with the matched **bge-reranker-v2-m3** cross-encoder (both multilingual, Apache-2.0). The older `cross-encoder/mmarco-mMiniLMv2-L12-H384-v1` reranker (the default if unset) is lighter and CPU-friendly but ranks lay/clinical questions noticeably worse.
+For embedding models that need instruction prefixes (e.g. e5: `query:` / `passage:`), pass `--passage-prefix` and `--query-prefix`. The query prefix is stored with the index and applied automatically at query time.
 
-> Both are loaded via `sentence-transformers` and download large models on first use (BGE-M3 ~2.3GB, bge-reranker-v2-m3 ~2.3GB); they are much faster on GPU. Changing the embedding model requires a fresh ingest. Changing **either** model changes the score scale, so re-calibrate the gate thresholds (below) against the gold eval set afterward.
+Each index prefix produces five files:
 
-#### Where the models run (local, no inference API)
+```text
+<prefix>_index_q.faiss    # FAISS on the topic side (FAQ question / article heading + lead text)
+<prefix>_index_qp.faiss   # FAISS on topic + question paraphrases (same as topic if none)
+<prefix>_index_qa.faiss   # FAISS on question/heading + full answer/body
+<prefix>_qa.pkl           # Items + metadata (embedding model, query prefix)
+<prefix>_bm25.pkl         # BM25 keyword index
+```
 
-Retrieval (dense embeddings) and reranking run **locally, in-process**, through
-the `sentence-transformers` / PyTorch library. There is **no external or cloud
-inference API**: `HORMONAI_EMBEDDING_MODEL` and `HORMONAI_RERANK_MODEL` name a
-model that is downloaded **once** from the Hugging Face Hub and cached (default
-`~/.cache/huggingface`), after which every query is computed on your own machine
-(CPU, or GPU/MPS if available). BM25 is pure local Python. The only other model,
-the optional LLM used for `--use-llm` rephrasing, runs in your local Ollama
-server, not a cloud service.
+### Legacy FAQ-only ingestion
 
-**Using a locally installed model.** Because these settings accept a filesystem
-path as well as a Hub id, point them at a local model directory to run without
-contacting the Hub at all:
+`ingest_faq.py` is the original FAQ-only pipeline. It handles neither articles nor the shared index, and writes `faq_{lang}_*` files. It can generate question paraphrases with Ollama for the paraphrase index:
+
+```bash
+python ingest_faq.py -l en -d corpus/en/FAQ_Hormono_EN.docx
+python ingest_faq.py -l en --augment-questions --paraphrase-n 6 -d corpus/en/FAQ_Hormono_EN.docx
+```
+
+---
+
+## Retrieval and scoring
+
+### Four retrieval channels
+
+For every question, `HybridFAQRetriever.retrieve()` runs four channels and keeps the top `top_k` (default 40) candidates from each. FAQ pairs and article chunks share one schema, so every channel covers the whole knowledge base:
+
+| Channel | Searches |
+|---|---|
+| **BM25** (keyword) | Tokenized full text: section/heading + question/title + answer/body |
+| **FAISS topic** | FAQ question, or article heading + the chunk's leading text |
+| **FAISS full** | FAQ question + answer, or article heading + full chunk body |
+| **FAISS topic+paraphrases** | Topic plus question paraphrases when present |
+
+The three dense channels use the same query vector, encoded once.
+
+### Fusion and reranking
+
+1. **Reciprocal Rank Fusion.** Each candidate's ranks are combined as `Σ 1 / (60 + rank)` across the four channels and stored as `fused_score`. This is an ordering score, not a similarity. The best cosine similarity across the dense channels is kept separately as `dense_sim`.
+2. **CrossEncoder reranking** (on by default, disable with `--no-rerank`). The top-N fused candidates (`--rerank-top-n`) are scored as `(question, section + question + answer)` pairs; the result, `rerank_score`, replaces the fused ordering. The reranker loads lazily and the system degrades gracefully if it is unavailable.
+
+---
+
+## Answering: abstain, language fallback, LLM
+
+### The answer/abstain gate
+
+`answer_query()` decides **semantic-first** whether the knowledge base actually answers the question. It answers if either:
+
+1. **Primary signal:** the top candidate's relevance clears its threshold: `rerank_score ≥ --rerank-threshold` when reranking is on, otherwise `dense_sim ≥ --sem-threshold`.
+2. **Lexical safety net:** a candidate contains a rare, specific term from the question (an IDF-weighted *anchor* with above-average IDF) **and** is at least `--dense-floor` cosine-similar.
+
+Additional rules:
+
+- Anchors are derived from corpus statistics (IDF), so no hand-maintained stop-word lists are needed. They no longer gate answers on their own; they shape **multi-concept bundles** (up to 3 sources) and drive the safety net.
+- Questions asking for **statistics** must be answered by a source that actually contains numbers for the asked concept.
+- Otherwise the system **declines** with a language-specific message.
+
+Thresholds are model-specific starting points and must be calibrated on the gold set (see [Evaluation](#evaluation-and-quality-checks)). For a patient-facing tool, the hard constraint is a **zero false-answer rate** on out-of-scope questions. Design details: [`RETRIEVAL_REVIEW.md`](RETRIEVAL_REVIEW.md).
+
+### Language scope
+
+| Scope | Index | Behavior |
+|---|---|---|
+| `shared` | `kb_all_*` | Same-language sources first; if none qualify, sources in the other language are shown **verbatim** with an "only available in <language>" notice. Content is never machine-translated. |
+| `language` | `kb_<lang>_*` | Only the question's language is searched; no cross-lingual fallback. |
+
+Set it with `--retrieval-scope` or `HORMONAI_RETRIEVAL_SCOPE`. It is an operator setting with no patient-facing control. Defaults differ by interface: the **GUI** defaults to `shared` (falling back to the per-language index if `kb_all_*` is missing); the **CLI** defaults to the per-language index unless `--retrieval-scope shared` or the legacy `--shared` flag is given.
+
+### Optional LLM rephrasing
+
+By default the retrieved text is quoted verbatim with a short fixed empathy line. With `--use-llm` (CLI) or the "LLM rephrasing" toggle (GUI), a local **Ollama** model rewrites **only the retrieved source text** for clarity and warmth. The prompt forbids adding facts, figures, drugs or dosages, requires keeping every caveat, and keeps the source's degree of certainty.
+
+If Ollama is unreachable or returns nothing, the answer falls back to verbatim text, and the fallback is reported: the CLI prints a `[notice]` to stderr naming the reason, the GUI shows a short warning.
+
+Setup:
+
+```bash
+ollama serve                                  # API on http://localhost:11434
+ollama pull llama3.2                          # default model (3B)
+curl http://localhost:11434/api/version       # optional check
+```
+
+Override the endpoint with `OLLAMA_HOST` and the model with `--llm-model` / `HORMONAI_LLM_MODEL`. Start Ollama before launching the CLI or GUI.
+
+### Guardrails on every answer
+
+- **Survival framing:** patient-mortality phrasing is reframed as survival language (e.g. "reduce the risk of dying from breast cancer" → "improve long-term survival") without changing meaning. Accurate statements about cancer cells dying are left untouched.
+- **Preamble stripping:** leading LLM meta-text such as "Here is a clear and compassionate response…" is removed.
+- **Sources out of the body:** sources are shown in the GUI's "Sources used for this answer" panel or printed after the answer in the CLI.
+
+---
+
+## Running the CLI and the GUI
+
+### CLI
+
+```bash
+python chatbot.py -l en --debug                              # per-language index, retrieval details
+python chatbot.py -l fr --retrieval-scope shared             # shared index with cross-lingual fallback
+python chatbot.py -l en --use-llm \
+  --rerank-model BAAI/bge-reranker-v2-m3 --rerank-threshold 0.2 --rerank-top-n 5
+```
+
+`--debug` prints candidates, scores, the decision path and a latency breakdown.
+
+### GUI
+
+```bash
+streamlit run hormonai_app.py
+streamlit run hormonai_app.py -- --retrieval-scope language  # query-language corpus only
+```
+
+The GUI accepts **the same launch arguments as the CLI**, passed after Streamlit's `--` separator:
+
+```bash
+streamlit run hormonai_app.py -- \
+  --rerank-top-n 5 --rerank-model BAAI/bge-reranker-v2-m3 --rerank-threshold 0.2 --debug
+```
+
+Precedence is **flag > environment variable > built-in default**. Retrieval and model flags apply at launch; `--language`, `--use-llm` and `--rerank/--no-rerank` only seed the sidebar defaults, which can be changed live. Model choices and `--top-k` are launch-time only, because the index is cached and the embedding model must match ingestion.
+
+---
+
+## Models
+
+| Purpose | Default | Recommended |
+|---|---|---|
+| Embeddings | `sentence-transformers/paraphrase-multilingual-mpnet-base-v2` | `BAAI/bge-m3` |
+| Reranker | `cross-encoder/mmarco-mMiniLMv2-L12-H384-v1` | `BAAI/bge-reranker-v2-m3` |
+| LLM (optional) | `llama3.2` via Ollama | |
+
+BGE-M3 and bge-reranker-v2-m3 are both multilingual and Apache-2.0 licensed, and rank lay and clinical questions noticeably better than the defaults. Each is roughly 2.3 GB and much faster on a GPU.
+
+- **The indexes committed in `data/` were built with `BAAI/bge-m3`**, so set `HORMONAI_EMBEDDING_MODEL=BAAI/bge-m3` to use them as-is.
+- **The embedding model must be identical at ingestion and query time.** The loader checks the output dimension against the FAISS index and refuses a mismatch. Changing it requires a fresh ingest.
+- **Changing either model changes the score scale**, so re-calibrate the thresholds afterwards.
+
+### Local and offline use
+
+Embeddings and reranking run **in-process** via `sentence-transformers`/PyTorch; there is no external inference API. Models are downloaded once from the Hugging Face Hub and cached (`~/.cache/huggingface`). The model settings also accept a local directory:
 
 ```bash
 export HORMONAI_EMBEDDING_MODEL="/models/bge-m3"
 export HORMONAI_RERANK_MODEL="/models/bge-reranker-v2-m3"
-# equivalently: python chatbot.py --embedding-model /models/bge-m3 --rerank-model /models/bge-reranker-v2-m3
-```
-
-To guarantee fully offline behavior (never reach the Hub, even to check the
-cache), also set the standard Hugging Face flags:
-
-```bash
-export HF_HUB_OFFLINE=1
+export HF_HUB_OFFLINE=1          # never contact the Hub
 export TRANSFORMERS_OFFLINE=1
 ```
 
-The embedding model still has to match the one used at ingestion (the loader
-checks the output dimension against the FAISS index and refuses a mismatch).
+---
 
-### Check PDF extraction fidelity (recommended before ingesting)
+## Configuration reference
 
-PDF extraction is the weakest link, and for a medical tool a garbled number or a dropped "not" is a safety issue. This script reports per-source extraction health (backend, pages, chars/page, chunk count, and a scanned/thin/ok flag) and, with `--preview`, prints the cleaned head/tail and first chunk so wording and numbers can be spot-checked. It exits non-zero if any PDF looks scanned/empty (no text layer, needs OCR or a cleaner source).
+The CLI, GUI and eval harness read the same environment variables, so a calibrated configuration applies everywhere.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `HORMONAI_EMBEDDING_MODEL` | `sentence-transformers/paraphrase-multilingual-mpnet-base-v2` | Embedding model (Hub id or local path). Must match ingestion. |
+| `HORMONAI_RERANK_MODEL` | `cross-encoder/mmarco-mMiniLMv2-L12-H384-v1` | Reranker (Hub id or local path). |
+| `HORMONAI_RERANK_TOP_N` | `5` in CLI, `20` in eval harness | Rerank only the top-N fused candidates. Lower is faster. |
+| `HORMONAI_RETRIEVAL_SCOPE` | GUI `shared`, CLI unset (per-language) | `shared` or `language`; see [Language scope](#language-scope). |
+| `HORMONAI_RERANK_THRESHOLD` | `-1.0` | Accept threshold on the reranker score. Model-specific. |
+| `HORMONAI_SEM_THRESHOLD` | `0.62` | Dense-cosine accept threshold (reranking off). |
+| `HORMONAI_DENSE_FLOOR` | `0.50` | Cosine floor for the lexical safety net. |
+| `HORMONAI_LLM_MODEL` | `llama3.2` | Ollama model for rephrasing. |
+| `OLLAMA_HOST` | `http://localhost:11434` | Ollama endpoint. |
+| `HORMONAI_SHOW_TIMING` | `0` | `1` shows a per-query latency breakdown in the GUI (also on with `--debug`). |
+| `HORMONAI_AUDIT_LATENCY` | `0` | `1` makes the GUI log a latency record per query (no query text). |
+| `HORMONAI_AUDIT_LOG` | `logs/audit.jsonl` | Log file read by `tools/latency_report.py`. |
+
+---
+
+## Evaluation and quality checks
+
+### Retrieval and gating
+
+`tests/eval_set.jsonl` is a gold set (EN + FR, categorized) keyed by item IDs of the form `<source_id>:<n>`, where `source_id` is the source file name without extension. If a source file is renamed, update the gold IDs to match. Each case states whether it should be answered and which sources are correct.
+
+`tests/eval_retrieval.py` runs it through the real pipeline and reports decision accuracy, recall@k, lead-source correctness, gold-source-in-bundle, and the false-abstention and false-answer rates:
+
+```bash
+python tests/eval_retrieval.py --shared --verbose                 # production (shared) path
+python tests/eval_retrieval.py --shared --rerank-threshold 0      # threshold sweep
+python tests/eval_retrieval.py --lang fr --json results.json      # one language, full results
+```
+
+Re-run it after any change to models, thresholds, ingestion or `rag_core.py`.
+
+### PDF extraction fidelity
+
+PDF extraction is the weakest link, and for a medical tool a garbled number or a dropped "not" is a safety issue. Check it before ingesting:
 
 ```bash
 python tests/pdf_fidelity.py --manifest manifest.json
 python tests/pdf_fidelity.py --preview --only NCI-HT.pdf
 ```
 
-> Note: PyMuPDF is AGPL-licensed. That is fine for internal/research use; review licensing before redistributing a product built on it. `pypdf` (BSD) remains the automatic fallback.
+It reports per-source extraction health and exits non-zero if a PDF looks scanned or empty (no text layer).
 
-### Build the indexes
+> PyMuPDF is AGPL-licensed. That is fine for internal and research use; review licensing before redistributing a product built on it. `pypdf` (BSD) is the automatic fallback.
 
-By default `ingest.py` builds **both** the combined shared multilingual index (`kb_all_*`, used for cross-lingual fallback) **and** the per-language indexes (`kb_<lang>_*`):
+---
 
-```bash
-python ingest.py --manifest manifest.json --embedding-model "BAAI/bge-m3"
-```
+## Logging, privacy and latency
 
-Chunking and index selection can be tuned:
+- The **CLI** appends one event per question to `logs/audit.jsonl` (`--audit-log`): the query, language, whether it was answered, whether the LLM was used, the lead source and timings.
+- The **GUI** logs only when `HORMONAI_AUDIT_LATENCY=1`, and then only timings, language and the answered flag, never the query text.
+- Audit logs can contain patient questions: keep them out of git (`logs/` is in `.gitignore`) and do not record personally identifiable information.
 
-```bash
-# larger article chunks, shared index only
-python ingest.py --manifest manifest.json --embedding-model "BAAI/bge-m3" \
-  --chunk-size 300 --chunk-overlap 50 --no-per-language
-
-# A/B a second model into a separate prefix (kb_all_bgem3_*, etc.)
-python ingest.py --manifest manifest.json --embedding-model "BAAI/bge-m3" --out-prefix kb_bgem3
-```
-
-Convenience flags for quick runs without a manifest:
+The reranker dominates per-query latency. `--rerank-top-n` is the main lever; a smaller reranker or a GPU also help. Aggregate logged timings into percentiles:
 
 ```bash
-python ingest.py --language en --faq corpus/en/FAQ_Hormono_EN.docx \
-  --article corpus/en/BCN-Tamoxifen.pdf --embedding-model "BAAI/bge-m3"
-```
-
-Outputs per index prefix:
-
-```text
-kb_all_index_q.faiss     # FAISS on the topic/question side (shared, all languages)
-kb_all_index_qa.faiss    # FAISS on question/heading + body text
-kb_all_index_qp.faiss    # FAISS on question + paraphrases (if any)
-kb_all_qa.pkl            # Unified, lang-tagged items + metadata (embedding model, prefixes)
-kb_all_bm25.pkl          # BM25 index
-kb_<lang>_*              # The same five files, per language
-```
-
-### Legacy FAQ-only ingestion (`ingest_faq.py`)
-
-The original FAQ-only pipeline is still supported and is what produced the current per-language indexes. It does not build the shared `kb_all_*` index and does not handle articles.
-
-```bash
-python ingest_faq.py -l en -d corpus/en/FAQ_Hormono_EN.docx
-python ingest_faq.py -l fr -d corpus/fr/FAQ_Hormono_FR.docx
-
-# optional: question paraphrase augmentation (requires Ollama at http://localhost:11434)
-python ingest_faq.py -l en --augment-questions --paraphrase-n 6 -d corpus/en/FAQ_Hormono_EN.docx
-```
-
-## Evaluate retrieval + gating
-
-`tests/eval_set.jsonl` is a gold set (EN + FR, categorized) keyed by **stable item IDs** (e.g. `20250613_FAQ_Hormono_EN:21`), so it survives re-ingestion and corpus growth. `tests/eval_retrieval.py` runs it through the real pipeline and reports decision accuracy, recall@k, **lead-source correctness** (did the answer headline a gold source?), **gold-source-in-bundle**, and the false-abstention / false-answer rates.
-
-```bash
-export HORMONAI_EMBEDDING_MODEL="BAAI/bge-m3"
-export HORMONAI_RERANK_MODEL="BAAI/bge-reranker-v2-m3"
-python tests/eval_retrieval.py --shared --verbose      # evaluate the shared (production) path
-```
-
-## Run hormonAI (CLI)
-```bash
-python chatbot.py -l en --debug
-```
-CrossEncoder reranking is **on by default** (disable with `--no-rerank`).
-
-## Run against the shared multilingual index (cross-lingual fallback)
-```bash
-python chatbot.py -l fr --shared
-```
-`-l` selects the active query language; the shared index answers in that
-language when possible and falls back cross-lingual with a notice otherwise.
-
-## LLM backend (Ollama) — required only for LLM rephrasing
-
-Grounded LLM rephrasing (the CLI `--use-llm` flag and the GUI "LLM rephrasing"
-toggle) needs a local Ollama server. Retrieval and verbatim answers work without
-it; if Ollama is not running, the app simply falls back to the verbatim answer.
-
-1. Install Ollama from https://ollama.com/download (macOS, Linux, or Windows).
-2. Start the server (it also starts automatically after install on macOS/Windows):
-
-```bash
-ollama serve                                   # serves the API on http://localhost:11434
-```
-
-3. Pull the model once (default is llama3.2, a 3B model):
-
-```bash
-ollama pull llama3.2
-curl http://localhost:11434/api/version        # optional: confirm it is up
-```
-
-Override the endpoint with `OLLAMA_HOST` (e.g. `export OLLAMA_HOST=http://localhost:11434`)
-and the model with `HORMONAI_LLM_MODEL` / `--llm-model`. Start Ollama **before**
-launching the CLI or the Streamlit GUI so the LLM toggle has a backend to reach.
-
-## Run with grounded LLM rephrasing
-```bash
-python chatbot.py -l en --debug \
-  --rerank-model BAAI/bge-reranker-v2-m3 \
-  --rerank-threshold 0.2 --rerank-top-n 5 \
-  --use-llm
-```
-With `--use-llm`, the answer is rephrased by the LLM using **only** the retrieved
-source text (for clarity and empathy, never adding facts). If the LLM is
-unreachable or returns nothing, it falls back to the verbatim answer, and the
-fallback is made **explicit** rather than silent: the CLI prints a `[notice]`
-to stderr (naming the reason, e.g. Ollama not running) and the GUI shows a short
-warning above the answer. Without `--use-llm`, the retrieved text is quoted
-verbatim with a fixed empathy line.
-
-In both cases the cited sources are kept **out of the answer body**: the GUI
-shows them in the "Sources used for this answer" panel, and the CLI prints them
-after the answer. Two deterministic guardrails also run on the final answer: a
-compassion reframe that turns patient-mortality phrasing into survival language
-(for example "reduce the risk of dying from breast cancer" becomes "improve
-long-term survival") without changing meaning, and removal of any leading LLM
-meta-preamble such as "Here is a clear and compassionate response to your
-question:". These are narrowly scoped, so accurate statements about cancer cells
-dying are left untouched.
-
-## Run the app (GUI)
-```bash
-# export the same models used at ingestion, then launch
-export HORMONAI_EMBEDDING_MODEL="BAAI/bge-m3"
-export HORMONAI_RERANK_MODEL="BAAI/bge-reranker-v2-m3"
-streamlit run hormonai_app.py
-```
-The GUI loads the shared `kb_all_*` index automatically (with same-language
-preference and cross-lingual fallback) and falls back to the per-language
-indexes if `kb_all_*` has not been built.
-
-To use the GUI's "LLM rephrasing" toggle, start Ollama first (see the "LLM
-backend (Ollama)" section above); otherwise the toggle has no effect and answers
-stay verbatim.
-
-To search only the corpus in the query's language (for example, English
-questions answered from the English corpus only, with no cross-lingual
-fallback):
-
-```bash
-export HORMONAI_EMBEDDING_MODEL="BAAI/bge-m3"
-export HORMONAI_RERANK_MODEL="BAAI/bge-reranker-v2-m3"
-streamlit run hormonai_app.py -- --retrieval-scope language
-```
-Retrieval scope is an operator-only setting, configured at launch via
-`--retrieval-scope` or `HORMONAI_RETRIEVAL_SCOPE` (there is no patient-facing
-control for it). The GUI defaults to `shared` (combined index, cross-lingual
-fallback) so current behavior is unchanged unless `language` is requested.
-Language-only mode uses the per-language `kb_<lang>` index, which ingestion
-builds by default (unless run with `--no-per-language`); if it is missing, the
-app falls back to the shared index.
-
-### Launch with parameters
-
-The GUI accepts the **exact same launch arguments as the CLI** (`chatbot.py`),
-passed through Streamlit after a `--` separator. This is the quickest way to
-tune retrieval without editing code or exporting env vars:
-
-```bash
-# rerank fewer candidates (faster) with a stronger reranker, and show a
-# per-query latency breakdown under each answer
-streamlit run hormonai_app.py -- \
-  --rerank-top-n 5 \
-  --rerank-model BAAI/bge-reranker-v2-m3 \
-  --rerank-threshold 0.2 \
-  --debug
-```
-
-Everything after `--` goes to the app's argument parser. Precedence is
-**flag > environment variable > built-in default**, so any argument not passed
-falls back to the matching `HORMONAI_*` env var (below). Retrieval/config flags
-(`--rerank-top-n`, `--rerank-model`, `--embedding-model`, `--top-k`,
-`--sem-threshold`, `--rerank-threshold`, `--dense-floor`, `--llm-model`) apply
-directly; interactive flags (`--language`, `--use-llm`, `--rerank/--no-rerank`)
-seed the sidebar defaults, which can still be changed live. Model choices and
-`--top-k` are launch-time only (the index is cached and the embedding model must
-match ingestion).
-
-## Configuration (environment variables)
-
-The CLI, GUI, and eval harness all read these so a calibrated configuration is applied everywhere:
-
-| Variable | Default | Purpose |
-|---|---|---|
-| `HORMONAI_EMBEDDING_MODEL` | `sentence-transformers/paraphrase-multilingual-mpnet-base-v2` | Dense embedding model, run locally via sentence-transformers. Accepts a Hugging Face id **or a local directory path**. **Must match the model used at ingestion.** |
-| `HORMONAI_RERANK_MODEL` | `cross-encoder/mmarco-mMiniLMv2-L12-H384-v1` | Cross-encoder reranker, run locally. Accepts a Hugging Face id or a local directory path. Recommended: `BAAI/bge-reranker-v2-m3`. |
-| `HORMONAI_RERANK_TOP_N` | `20` | Rerank only the top-N fused candidates. Lower is faster (esp. a large reranker on CPU); higher gives a little more recall. |
-| `HORMONAI_RETRIEVAL_SCOPE` | `shared` (GUI) | Language scope of retrieval. `shared` = combined `kb_all` index with same-language-first + cross-lingual fallback. `language` = search only the query-language corpus (`kb_<lang>`), no cross-lingual fallback. Equivalent CLI flag: `--retrieval-scope`. |
-| `HORMONAI_RERANK_THRESHOLD` | `-1.0` | Accept threshold on the reranker score (when reranking is on). Model-specific — calibrate. |
-| `HORMONAI_SEM_THRESHOLD` | `0.62` | Dense-cosine accept threshold (used when reranking is off). |
-| `HORMONAI_DENSE_FLOOR` | `0.50` | Cosine floor for the high-IDF lexical safety net. |
-| `HORMONAI_LLM_MODEL` | `llama3.2` | Ollama model used for grounded rephrasing (`--use-llm`). |
-| `HORMONAI_SHOW_TIMING` | `0` | `1` shows a per-query latency breakdown (retrieve / rerank / llm / total) under each GUI answer. Also enabled by the CLI `--debug` flag. Off by default. |
-| `HORMONAI_AUDIT_LATENCY` | `0` | `1` appends a PHI-free latency record per query (timing + language + answered only, never the raw query) to the audit log for p50/p95 tracking. |
-
-Thresholds are **model-specific starting points, not tuned values**. After any embedding/reranker change, sweep them on the gold set and set the winning values via these env vars. For a patient-facing tool, keep the out-of-scope **false-answer rate at zero** as the hard constraint.
-
-```bash
-# recalibrate after a model change (watch the FALSE-ANSWER and lead-source-correctness rows)
-python tests/eval_retrieval.py --shared --verbose
-python tests/eval_retrieval.py --shared --rerank-threshold 0     # sweep around the default
-```
-
-### Latency
-
-The reranker is the dominant per-query cost and is tunable: `HORMONAI_RERANK_TOP_N`
-caps how many fused candidates are reranked (the main lever), and a smaller
-reranker model or GPU/MPS both help. Turn on `HORMONAI_SHOW_TIMING=1` (or CLI
-`--debug`) to see the retrieve / rerank / llm / total split per query, and
-`HORMONAI_AUDIT_LATENCY=1` to log those numbers. Aggregate them into p50/p95/p99:
-
-```bash
-python tools/latency_report.py                 # percentiles per stage from the audit log
+python tools/latency_report.py
 python tools/latency_report.py --answered-only --lang en
 ```
 
+---
+
+## Repository structure
+
+```text
+.
+├── ingest.py              # Type-aware ingestion (FAQ + articles, shared + per-language indexes)
+├── ingest_faq.py          # Legacy FAQ-only ingestion
+├── rag_core.py            # Retriever, answer/abstain gate, cross-lingual fallback, LLM rephrasing
+├── chatbot.py             # Command-line chatbot
+├── hormonai_app.py        # Streamlit GUI ("Mona")
+├── audit_logger.py        # JSONL audit logger
+├── manifest.json          # Ingestion manifest (path, type, lang)
+├── RETRIEVAL_REVIEW.md    # Retrieval design notes and change log
+├── AGENTS.md              # Guidance for AI coding assistants
+├── data/                  # Generated indexes: kb_all_* and kb_{en,fr}_*
+├── corpus/                # Source documents by language (not tracked)
+├── logs/                  # Audit logs (must not be committed)
+├── tests/
+│   ├── eval_set.jsonl     # Gold evaluation cases (EN + FR)
+│   ├── eval_retrieval.py  # Evaluation harness
+│   ├── pdf_fidelity.py    # PDF extraction checks
+│   ├── inspect_qa.py      # Legacy: inspect faq_* items
+│   └── test_retreival.py  # Legacy: retrieval smoke test on faq_* indexes
+└── tools/
+    └── latency_report.py  # p50/p95/p99 latency from the audit log
+```
+
+## License
+
+MIT, see [LICENSE](LICENSE).

@@ -201,7 +201,7 @@ Source documents, organized by language (`corpus/en/`, `corpus/fr/`) and referen
 - JSONL audit log, default `logs/audit.jsonl` (`--audit-log`, `HORMONAI_AUDIT_LOG` for the latency report)
 - `query` events: query, language, answered, used_llm, source index/question, `timing_ms`, meta
 - Optional PHI-free `latency` events from the GUI (`HORMONAI_AUDIT_LATENCY=1`)
-- Ignored by git
+- Listed in `.gitignore`; logs can contain patient questions and must never be committed
 
 ---
 
