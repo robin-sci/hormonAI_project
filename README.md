@@ -33,52 +33,13 @@ hormonAI is a **Retrieval-Augmented Generation (RAG) chatbot** that answers pati
 
 The system has two phases: **ingestion** (offline, run once per corpus or model change) builds the indexes; **answering** (per question) retrieves candidates, decides whether the knowledge base really answers the question, and formats the reply.
 
-```mermaid
-flowchart TB
-    subgraph OFFLINE["① Ingestion (offline)"]
-        direction LR
-        M["manifest.json<br/>(path, type, lang)"] --> ING["ingest.py"]
-        C1["corpus/en, corpus/fr<br/>FAQ .docx · articles .pdf/.docx/.md/.txt"] --> ING
-        ING -->|"FAQ → one chunk per Q/A<br/>article → heading split + overlapping chunks"| ITEMS["Unified items<br/>(id, lang, section, question, answer, ...)"]
-        ITEMS --> EMB["Embedding model<br/>(sentence-transformers, local)"]
-        EMB --> IDX
-        ITEMS --> IDX
-        subgraph IDX["data/ — kb_all_* (shared) and kb_en_* / kb_fr_*"]
-            direction TB
-            I1["BM25 index<br/>*_bm25.pkl"]
-            I2["FAISS topic<br/>*_index_q.faiss"]
-            I3["FAISS topic+paraphrases<br/>*_index_qp.faiss"]
-            I4["FAISS full Q+A<br/>*_index_qa.faiss"]
-            I5["Items + metadata<br/>*_qa.pkl"]
-        end
-    end
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/architecture-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="docs/diagrams/architecture-light.svg">
+  <img alt="hormonAI architecture: offline ingestion builds shared and per-language BM25/FAISS indexes; each question flows through hybrid retrieval, rank fusion, reranking and a semantic-first answer/abstain gate to a same-language or cross-lingual answer bundle or a polite decline, optionally rephrased by a local Ollama model, with audit logging and an evaluation harness." src="docs/diagrams/architecture-light.svg" width="100%">
+</picture>
 
-    subgraph ONLINE["② Answering (per question) — rag_core.py"]
-        direction TB
-        UI["chatbot.py (CLI)<br/>hormonai_app.py (Streamlit GUI, 'Mona')"] -->|question + language| RET
-        RET["HybridFAQRetriever.retrieve()<br/>4 channels, top_k each"] --> RRF["Reciprocal Rank Fusion<br/>Σ 1/(60+rank)"]
-        RRF --> RR["CrossEncoder rerank<br/>(top-N, on by default)"]
-        RR --> GATE{"answer_query()<br/>semantic-first gate"}
-        GATE -->|"same-language match"| BUNDLE["Answer bundle<br/>(up to 3 sources)"]
-        GATE -->|"only other language matches<br/>(shared scope)"| XL["Cross-lingual bundle<br/>+ 'only available in …' notice"]
-        GATE -->|"no grounded match"| ABS["Polite decline<br/>build_abstain()"]
-        XL --> FMT
-        BUNDLE --> FMT{"LLM enabled?"}
-        FMT -->|no| VERB["Verbatim source text"]
-        FMT -->|yes| LLM["Ollama (local)<br/>grounded rephrase"]
-        LLM -->|"unreachable / empty"| VERB
-        LLM --> POST
-        VERB --> POST["Guardrails<br/>survival reframe · strip LLM preamble"]
-        POST --> OUT["Answer + 'Sources used' panel"]
-        ABS --> OUT
-    end
-
-    IDX -. loaded at startup .-> RET
-    OUT --> UI
-    UI --> LOG["audit_logger.py<br/>logs/audit.jsonl"]
-    LOG --> LAT["tools/latency_report.py<br/>p50/p95/p99"]
-    EVAL["tests/eval_retrieval.py<br/>+ tests/eval_set.jsonl"] -->|runs the real pipeline| GATE
-```
+<sub>Source: [`docs/diagrams/architecture.html`](docs/diagrams/architecture.html) (dark: [`architecture-dark.html`](docs/diagrams/architecture-dark.html)), drawn with [diagram-design](https://github.com/cathrynlavery/diagram-design). Update the HTML and re-export the SVGs when the pipeline changes.</sub>
 
 | Module | Role |
 |---|---|
@@ -394,6 +355,7 @@ python tools/latency_report.py --answered-only --lang en
 ├── manifest.json          # Ingestion manifest (path, type, lang)
 ├── RETRIEVAL_REVIEW.md    # Retrieval design notes and change log
 ├── AGENTS.md              # Guidance for AI coding assistants
+├── docs/diagrams/         # Architecture diagram (HTML source + light/dark SVG)
 ├── data/                  # Generated indexes: kb_all_* and kb_{en,fr}_*
 ├── corpus/                # Source documents by language (not tracked)
 ├── logs/                  # Audit logs (must not be committed)
