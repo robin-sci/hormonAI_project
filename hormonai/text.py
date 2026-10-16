@@ -366,7 +366,7 @@ def extract_anchor_concepts(
     words, and drug names that saturate the corpus, with zero curation.
     """
     lang = _norm_lang(language)
-    cap = max(1, int(retriever.corpus_size * max_df_fraction))
+    cap = max(1, int(retriever.corpus_size(lang) * max_df_fraction))
 
     seen: Set[str] = set()
     present: List[Tuple[str, float, int]] = []
@@ -382,12 +382,12 @@ def extract_anchor_concepts(
             continue
         seen.add(s)
 
-        d = retriever.df(s)
+        d = retriever.df(s, lang)
         if d <= 0:
             dropped_absent.append(tok)
             continue
 
-        present.append((s, retriever.idf(s), d))
+        present.append((s, retriever.idf(s, lang), d))
         if d <= cap:
             anchors.append(s)
         else:

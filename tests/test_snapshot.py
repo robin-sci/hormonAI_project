@@ -96,9 +96,8 @@ def _run_pipeline(monkeypatch: pytest.MonkeyPatch) -> Dict[str, Any]:
             queries = queries[:10] + EXTRA_QUERIES
         for q in queries:
             retriever = _retriever(shared, "en" if shared else q["lang"], rerank)
-            retriever.language = q["lang"]
             res = answer.answer_query(
-                retriever=retriever, user_query=q["query"], use_llm=use_llm,
+                retriever=retriever, user_query=q["query"], language=q["lang"], use_llm=use_llm,
                 debug=True, **thresholds,
             )
             row = {f: getattr(res, f) for f in RESULT_FIELDS}

@@ -500,6 +500,7 @@ def _decide_bundle(
 def answer_query(
     retriever: "HybridFAQRetriever",
     user_query: str,
+    language: Optional[str] = None,
     use_llm: bool = False,
     llm_model: str = "llama3.2",
     debug: bool = False,
@@ -509,6 +510,10 @@ def answer_query(
 ) -> AnswerResult:
     """
     SEMANTIC-FIRST answer/abstain decision.
+
+    `language` is the query language ("en"/"fr"); it defaults to the
+    retriever's index language. Pass it explicitly when one retriever serves
+    several languages (the shared index), never by mutating the retriever.
 
     The primary relevance signal is the cross-encoder rerank score (when
     reranking is on) or dense cosine similarity (otherwise). Lexical / IDF
@@ -529,10 +534,10 @@ def answer_query(
     tuned values. For a patient-facing tool, watch the false-ANSWER rate when
     lowering thresholds.
     """
-    lang = _norm_lang(retriever.language)
+    lang = _norm_lang(language or retriever.language)
     _t_total = time.perf_counter()
-    candidates = retriever.retrieve(user_query)
-    timing = dict(getattr(retriever, "last_timing_ms", {}) or {})
+    timing: Dict[str, Any] = {}
+    candidates = retriever.retrieve(user_query, lang, timing)
     timing["llm"] = 0.0
 
     ax = extract_anchor_concepts(user_query, lang, retriever)
@@ -542,8 +547,8 @@ def answer_query(
     # in only a small share of the corpus. Defined by document-frequency, NOT by
     # idf >= average_idf -- the latter collapses to the empty set once a large
     # article corpus inflates the average, disabling the net entirely.
-    strong_df_cap = max(1, int(0.15 * retriever.corpus_size))
-    strong_anchors = {a for a in anchor_concepts if 1 <= retriever.df(a) <= strong_df_cap}
+    strong_df_cap = max(1, int(0.15 * retriever.corpus_size(lang)))
+    strong_anchors = {a for a in anchor_concepts if 1 <= retriever.df(a, lang) <= strong_df_cap}
     stats_intent = _is_stats_intent(user_query, lang)
 
     sem_top = _semantic_top(candidates)

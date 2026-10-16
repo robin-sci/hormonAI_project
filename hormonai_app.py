@@ -616,7 +616,6 @@ if ARGS.retrieval_scope == "language":
     except Exception:
         try:
             retriever = load_shared_retriever(use_rerank)
-            retriever.language = language
         except Exception as e:
             st.error(f"Error loading knowledge base for language '{language}': {e}")
             st.stop()
@@ -625,7 +624,6 @@ else:
     # fallback. Fall back to the per-language index if kb_all is not built.
     try:
         retriever = load_shared_retriever(use_rerank)
-        retriever.language = language  # active query language on the shared corpus
     except Exception:
         try:
             retriever = load_perlang_retriever(language, use_rerank)
@@ -667,6 +665,7 @@ def handle_send():
         res = answer_query(
             retriever=retriever,
             user_query=user_input_val,
+            language=language,
             use_llm=use_llm,
             llm_model=ARGS.llm_model,
             debug=False,

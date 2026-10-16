@@ -91,7 +91,6 @@ def main() -> int:
     results: List[Dict[str, Any]] = []
     for c in cases:
         r = retrievers[c["lang"]]
-        r.language = c["lang"]  # active query language (matters in shared mode)
 
         # Map positional indices -> stable item ids (works in per-language AND
         # shared mode, since the id lives on the item regardless of position).
@@ -101,13 +100,14 @@ def main() -> int:
             except Exception:
                 return ""
 
-        cands = r.retrieve(c["query"])
+        cands = r.retrieve(c["query"], c["lang"])
         retrieved_ids = {_id_at(x.index) for x in cands}
         gold = set(c.get("gold_ids", []))
 
         res = answer_query(
             retriever=r,
             user_query=c["query"],
+            language=c["lang"],
             use_llm=False,
             debug=True,
             **gate_kwargs(args),

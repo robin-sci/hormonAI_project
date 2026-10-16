@@ -54,6 +54,7 @@ def main() -> None:
         result = answer_query(
             retriever=retriever,
             user_query=user,
+            language=args.language,
             use_llm=args.use_llm,
             llm_model=args.llm_model,
             debug=args.debug,

@@ -197,33 +197,43 @@ class HybridFAQRetriever:
         faiss.normalize_L2(emb)
         return emb
 
-    def _active_stats(self) -> Dict[str, Any]:
-        """Corpus statistics for the active query language."""
-        return self._stats_by_lang.get(
-            self.language, {"df": {}, "idf": {}, "size": 1}
-        )
+    # The query language is passed to every per-query method instead of being
+    # stored on the retriever: one loaded retriever is shared by all GUI
+    # sessions, so per-query state on it would leak between users.
 
-    @property
-    def corpus_size(self) -> int:
-        return self._active_stats()["size"]
+    def _stats(self, language: str) -> Dict[str, Any]:
+        """Corpus statistics for the given query language."""
+        return self._stats_by_lang.get(language, {"df": {}, "idf": {}, "size": 1})
 
-    def df(self, stem: str) -> int:
+    def corpus_size(self, language: str) -> int:
+        return self._stats(language)["size"]
+
+    def df(self, stem: str, language: str) -> int:
         """Document frequency of a stem (max over its synonym group)."""
-        d = self._active_stats()["df"]
-        acceptable = _concept_match_stems(stem, self.language)
+        d = self._stats(language)["df"]
+        acceptable = _concept_match_stems(stem, language)
         return max((d.get(a, 0) for a in acceptable), default=0)
 
-    def idf(self, stem: str) -> float:
+    def idf(self, stem: str, language: str) -> float:
         """Smoothed IDF of a stem (min over its synonym group; 0.0 if absent)."""
-        idf_map = self._active_stats()["idf"]
-        acceptable = _concept_match_stems(stem, self.language)
+        idf_map = self._stats(language)["idf"]
+        acceptable = _concept_match_stems(stem, language)
         vals = [idf_map[a] for a in acceptable if a in idf_map]
         return min(vals) if vals else 0.0
 
-    def retrieve(self, user_query: str) -> List[RetrievalCandidate]:
-        # Per-query latency breakdown, readable via `retriever.last_timing_ms`
-        # (populated on every call; surfaced in --debug output).
-        self.last_timing_ms: Dict[str, Any] = {"retrieve": 0.0, "rerank": 0.0, "n_reranked": 0}
+    def retrieve(
+        self,
+        user_query: str,
+        language: Optional[str] = None,
+        timing: Optional[Dict[str, Any]] = None,
+    ) -> List[RetrievalCandidate]:
+        """Hybrid retrieval for one query. `language` defaults to the index
+        language; if a `timing` dict is given, it receives the per-stage
+        latency breakdown (retrieve / rerank ms, n_reranked)."""
+        lang = _norm_lang(language) if language else self.language
+        if timing is None:
+            timing = {}
+        timing.update({"retrieve": 0.0, "rerank": 0.0, "n_reranked": 0})
         if not self._items:
             return []
 
@@ -303,7 +313,7 @@ class HybridFAQRetriever:
                     answer=str(it.get("answer", "")),
                     fused_score=float(score),
                     dense_sim=(dense_sim.get(int(idx)) if int(idx) in dense_sim else None),
-                    lang=_norm_lang(str(it.get("lang", self.language))),
+                    lang=_norm_lang(str(it.get("lang", lang))),
                     source_type=source_type,
                     source_id=str(it.get("source_id", "")),
                     heading_path=str(it.get("heading_path", "")),
@@ -311,7 +321,7 @@ class HybridFAQRetriever:
             )
 
         # Embedding + BM25 + FAISS search + fusion are done; the rest is reranking.
-        self.last_timing_ms["retrieve"] = (time.perf_counter() - _t_retrieve) * 1000.0
+        timing["retrieve"] = (time.perf_counter() - _t_retrieve) * 1000.0
 
         if self._cross_encoder is not None and len(candidates) >= 2:
             # Rerank only a SHORTLIST of the best fused candidates, not the whole
@@ -332,9 +342,9 @@ class HybridFAQRetriever:
                     reverse=True,
                 )
                 candidates = shortlist
-                self.last_timing_ms["n_reranked"] = len(pairs)
+                timing["n_reranked"] = len(pairs)
             except Exception:
                 pass
-            self.last_timing_ms["rerank"] = (time.perf_counter() - _t_rerank) * 1000.0
+            timing["rerank"] = (time.perf_counter() - _t_rerank) * 1000.0
 
         return candidates
