@@ -15,99 +15,19 @@ from __future__ import annotations
 
 import os
 import sys
-import argparse
 
-from rag_core import HybridFAQRetriever, answer_query, print_debug
+from config import gate_kwargs, load_retriever, parse_args
+from rag_core import answer_query, print_debug
 from audit_logger import AuditLogger
 
 
-def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description="hormonAI CLI chatbot (knowledge-base-restricted RAG).")
-    p.add_argument("--language", "-l", choices=["en", "fr"], default="en")
-    p.add_argument("--data-dir", default="data")
-    p.add_argument("--top-k", type=int, default=40)
-    p.add_argument("--embedding-model",
-                   default=os.getenv("HORMONAI_EMBEDDING_MODEL",
-                                     "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"),
-                   help="Must match the model used at ingestion (e.g. BAAI/bge-m3).")
-
-    # Reranking is ON by default: it reorders candidates so the coverage/stats
-    # gates operate on better-ordered results. Use --no-rerank to disable.
-    # The cross-encoder loads lazily and degrades gracefully if unavailable.
-    p.add_argument("--rerank", action=argparse.BooleanOptionalAction, default=True,
-                   help="CrossEncoder reranking (better ordering, slower). Default: on. Disable with --no-rerank.")
-    p.add_argument("--rerank-model",
-                   default=os.getenv("HORMONAI_RERANK_MODEL", "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1"),
-                   help="Cross-encoder reranker (e.g. BAAI/bge-reranker-v2-m3 for stronger multilingual ranking).")
-
-    # Shared multilingual index (faq_all_*): same-language preferred, cross-lingual
-    # fallback. --language then selects the active QUERY language. Default: off
-    # (loads the per-language faq_<lang>_* index).
-    p.add_argument("--shared", action="store_true",
-                   help="Use the combined faq_all_* index (cross-lingual fallback).")
-    # Language scope of retrieval. This is the clean, named control:
-    #   shared   -> combined kb_all index, same-language-first + cross-lingual fallback
-    #   language -> ONLY the query-language corpus (kb_<lang>), no cross-lingual fallback
-    # When set, it overrides --shared. Default (unset) keeps the --shared behavior.
-    p.add_argument("--retrieval-scope", choices=["shared", "language"],
-                   default=os.getenv("HORMONAI_RETRIEVAL_SCOPE"),
-                   help="'shared' = combined index with cross-lingual fallback; "
-                        "'language' = search only the query-language corpus. "
-                        "Overrides --shared; env: HORMONAI_RETRIEVAL_SCOPE.")
-    p.add_argument("--rerank-top-n", type=int,
-                   default=int(os.getenv("HORMONAI_RERANK_TOP_N", "5")),
-                   help="Rerank only the top-N fused candidates (lower = faster; default 5).")
-
-    # Gate tuning (calibrate on tests/eval_set.jsonl for the deployed models).
-    # Semantic-first: rerank score is primary when --rerank is on, else dense cosine.
-    p.add_argument("--sem-threshold", type=float,
-                   default=float(os.getenv("HORMONAI_SEM_THRESHOLD", "0.62")),
-                   help="Dense cosine accept threshold when reranking is OFF (default: 0.62).")
-    p.add_argument("--rerank-threshold", type=float,
-                   default=float(os.getenv("HORMONAI_RERANK_THRESHOLD", "-1.0")),
-                   help="Cross-encoder accept threshold when reranking is ON (default: -1.0; calibrate on eval set).")
-    p.add_argument("--dense-floor", type=float,
-                   default=float(os.getenv("HORMONAI_DENSE_FLOOR", "0.50")),
-                   help="Permissive cosine floor for the high-IDF lexical safety net (default: 0.50).")
-
-    p.add_argument("--use-llm", action="store_true", help="Add an empathetic tone wrapper with an LLM (ONLY for answered queries).")
-    p.add_argument("--llm-model", default=os.getenv("HORMONAI_LLM_MODEL", "llama3.2"),
-                   help="Ollama model name (default: llama3.2).")
-
-    p.add_argument("--debug", action="store_true")
-    p.add_argument("--audit-log", default="logs/audit.jsonl")
-
-    return p.parse_args()
-
-
-def resolve_shared(args) -> bool:
-    """Effective index/scope choice. `--retrieval-scope` (when set) wins over the
-    legacy `--shared` flag: 'language' means query-language-only retrieval
-    (per-language index, no cross-lingual fallback); 'shared' means the combined
-    index with cross-lingual fallback."""
-    scope = getattr(args, "retrieval_scope", None)
-    if scope:
-        return scope == "shared"
-    return bool(getattr(args, "shared", False))
-
-
 def main() -> None:
-    args = parse_args()
+    args = parse_args(default_scope="language")
 
-    shared = resolve_shared(args)
+    shared = args.retrieval_scope == "shared"
     scope_label = "shared (cross-lingual fallback)" if shared else "language-only"
     print(f"Loading retriever for LANGUAGE = {args.language} | scope = {scope_label}...")
-    retriever = HybridFAQRetriever(
-        language=args.language,
-        data_dir=args.data_dir,
-        top_k=args.top_k,
-        embedding_model=args.embedding_model,
-        rerank=args.rerank,
-        rerank_model=args.rerank_model,
-        rerank_top_n=args.rerank_top_n,
-        shared=shared,
-    )
-    retriever.load()
+    retriever = load_retriever(args, args.language, shared)
 
     logger = AuditLogger(args.audit_log)
 
@@ -137,9 +57,7 @@ def main() -> None:
             use_llm=args.use_llm,
             llm_model=args.llm_model,
             debug=args.debug,
-            sem_accept_threshold=args.sem_threshold,
-            rerank_accept_threshold=args.rerank_threshold,
-            dense_floor=args.dense_floor,
+            **gate_kwargs(args),
         )
 
         if args.debug:

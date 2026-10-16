@@ -191,7 +191,7 @@ Thresholds are model-specific starting points and must be calibrated on the gold
 | `shared` | `kb_all_*` | Same-language sources first; if none qualify, sources in the other language are shown **verbatim** with an "only available in <language>" notice. Content is never machine-translated. |
 | `language` | `kb_<lang>_*` | Only the question's language is searched; no cross-lingual fallback. |
 
-Set it with `--retrieval-scope` or `HORMONAI_RETRIEVAL_SCOPE`. It is an operator setting with no patient-facing control. Defaults differ by interface: the **GUI** defaults to `shared` (falling back to the per-language index if `kb_all_*` is missing); the **CLI** defaults to the per-language index unless `--retrieval-scope shared` or the legacy `--shared` flag is given.
+Set it with `--retrieval-scope` or `HORMONAI_RETRIEVAL_SCOPE`. It is an operator setting with no patient-facing control. Defaults differ by interface: the **GUI** defaults to `shared` (falling back to the per-language index if `kb_all_*` is missing); the **CLI** and the eval harness default to `language`.
 
 ### Optional LLM rephrasing
 
@@ -277,14 +277,14 @@ export TRANSFORMERS_OFFLINE=1
 
 ## Configuration reference
 
-The CLI, GUI and eval harness read the same environment variables, so a calibrated configuration applies everywhere.
+All options are defined once in `config.py` and shared by the CLI, the GUI and the eval harness, so a calibrated configuration applies everywhere and the eval measures exactly what is deployed.
 
 | Variable | Default | Purpose |
 |---|---|---|
 | `HORMONAI_EMBEDDING_MODEL` | `sentence-transformers/paraphrase-multilingual-mpnet-base-v2` | Embedding model (Hub id or local path). Must match ingestion. |
 | `HORMONAI_RERANK_MODEL` | `cross-encoder/mmarco-mMiniLMv2-L12-H384-v1` | Reranker (Hub id or local path). |
-| `HORMONAI_RERANK_TOP_N` | `5` in CLI, `20` in eval harness | Rerank only the top-N fused candidates. Lower is faster. |
-| `HORMONAI_RETRIEVAL_SCOPE` | GUI `shared`, CLI unset (per-language) | `shared` or `language`; see [Language scope](#language-scope). |
+| `HORMONAI_RERANK_TOP_N` | `5` | Rerank only the top-N fused candidates. Lower is faster. |
+| `HORMONAI_RETRIEVAL_SCOPE` | GUI `shared`; CLI and eval `language` | `shared` or `language`; see [Language scope](#language-scope). |
 | `HORMONAI_RERANK_THRESHOLD` | `-1.0` | Accept threshold on the reranker score. Model-specific. |
 | `HORMONAI_SEM_THRESHOLD` | `0.62` | Dense-cosine accept threshold (reranking off). |
 | `HORMONAI_DENSE_FLOOR` | `0.50` | Cosine floor for the lexical safety net. |
@@ -305,8 +305,8 @@ The CLI, GUI and eval harness read the same environment variables, so a calibrat
 `tests/eval_retrieval.py` runs it through the real pipeline and reports decision accuracy, recall@k, lead-source correctness, gold-source-in-bundle, and the false-abstention and false-answer rates:
 
 ```bash
-uv run python tests/eval_retrieval.py --shared --verbose                 # production (shared) path
-uv run python tests/eval_retrieval.py --shared --rerank-threshold 0      # threshold sweep
+uv run python tests/eval_retrieval.py --retrieval-scope shared --verbose # production (shared) path
+uv run python tests/eval_retrieval.py --retrieval-scope shared --rerank-threshold 0  # threshold sweep
 uv run python tests/eval_retrieval.py --lang fr --json results.json      # one language, full results
 ```
 
@@ -363,6 +363,7 @@ uv run python tools/latency_report.py --answered-only --lang en
 ├── ingest_faq.py          # Legacy FAQ-only ingestion
 ├── rag_core.py            # Retriever, answer/abstain gate, cross-lingual fallback, LLM rephrasing
 ├── chatbot.py             # Command-line chatbot
+├── config.py              # Launch options shared by CLI, GUI and eval
 ├── hormonai_app.py        # Streamlit GUI ("Mona")
 ├── audit_logger.py        # JSONL audit logger
 ├── manifest.json          # Ingestion manifest (path, type, lang)

@@ -3,10 +3,8 @@ import html
 import re
 import streamlit as st
 
-from rag_core import (
-    HybridFAQRetriever,
-    answer_query,
-)
+from config import gate_kwargs, load_retriever, parse_args
+from rag_core import HybridFAQRetriever, answer_query
 from audit_logger import AuditLogger
 
 # ---------- BASIC PAGE CONFIG ----------
@@ -17,36 +15,13 @@ st.set_page_config(
 )
 
 # ---------- LAUNCH-TIME CONFIG ----------
-# The GUI accepts EXACTLY the same launch arguments as the CLI (chatbot.py), via
+# The GUI accepts the same launch arguments as the CLI (see config.py), via
 # Streamlit's passthrough after `--`, e.g.:
 #   streamlit run hormonai_app.py -- --rerank-top-n 10 --rerank-model BAAI/bge-reranker-v2-m3
-# We reuse the CLI's argparse definition verbatim so the two never drift. With no
-# passthrough args, every value falls back to its CLI default (which reads the
-# same HORMONAI_* env vars), so existing env-based configuration keeps working.
 # Streamlit puts only the post-`--` tokens on sys.argv, so this parses cleanly.
-from chatbot import parse_args as _parse_cli_args  # noqa: E402
-
-ARGS = _parse_cli_args()
-
-DEFAULT_LLM_MODEL = ARGS.llm_model
-# Must match the model used at ingestion (e.g. BAAI/bge-m3). Overriding the
-# embedding model without re-ingesting will fail the FAISS dimension check.
-DEFAULT_EMBEDDING_MODEL = ARGS.embedding_model
-# Reranker model. Upgrade to a stronger multilingual cross-encoder (e.g.
-# BAAI/bge-reranker-v2-m3, which pairs with BGE-M3) via --rerank-model.
-# Changing it requires re-calibrating --rerank-threshold (different scale).
-DEFAULT_RERANK_MODEL = ARGS.rerank_model
-# Only rerank the top-N fused candidates. Lower = faster (esp. with a large
-# reranker like bge-reranker-v2-m3 on CPU); higher = a bit more recall.
-DEFAULT_RERANK_TOP_N = ARGS.rerank_top_n
-DEFAULT_TOP_K = ARGS.top_k
-DEFAULT_DATA_DIR = ARGS.data_dir
-# Accept/abstain thresholds. Defaults are conservative and model-specific --
-# calibrate on the gold eval set, then pass --sem-threshold / --rerank-threshold
-# / --dense-floor at launch (or set the matching HORMONAI_* env vars).
-RERANK_ACCEPT_THRESHOLD = ARGS.rerank_threshold
-SEM_ACCEPT_THRESHOLD = ARGS.sem_threshold
-DENSE_FLOOR = ARGS.dense_floor
+# Language scope is an operator-only setting; the GUI defaults to 'shared'
+# (combined index, same-language-first + cross-lingual fallback).
+ARGS = parse_args(default_scope="shared")
 # --debug (or HORMONAI_SHOW_TIMING=1) prints a per-query latency breakdown under
 # each answer (retrieve / rerank / llm / total). Off by default (patient UI).
 SHOW_TIMING = bool(getattr(ARGS, "debug", False)) or os.getenv("HORMONAI_SHOW_TIMING", "0") == "1"
@@ -55,14 +30,6 @@ SHOW_TIMING = bool(getattr(ARGS, "debug", False)) or os.getenv("HORMONAI_SHOW_TI
 # default. Path from --audit-log (CLI default logs/audit.jsonl).
 AUDIT_LATENCY = os.getenv("HORMONAI_AUDIT_LATENCY", "0") == "1"
 AUDIT_LOG_PATH = ARGS.audit_log
-# Language scope of retrieval:
-#   'shared'   -> combined kb_all index, same-language-first + cross-lingual
-#                 fallback (the existing default behavior).
-#   'language' -> search ONLY the query-language corpus (kb_<lang>); an English
-#                 question searches the English corpus only, with no fallback.
-# Set via --retrieval-scope or HORMONAI_RETRIEVAL_SCOPE. Defaults to 'shared'
-# so current behavior is unchanged unless language-only is explicitly requested.
-RETRIEVAL_SCOPE = (getattr(ARGS, "retrieval_scope", None) or "shared").lower()
 
 
 # ---------- SAMPLE PROMPTS (from patient-forum research) ----------
@@ -619,10 +586,6 @@ use_rerank = st.sidebar.checkbox(
     help=use_rerank_help,
 )
 
-# Language scope is an operator-only setting (launch flag / env), never a
-# patient-facing control. It is fixed for the session from RETRIEVAL_SCOPE.
-active_scope = RETRIEVAL_SCOPE
-
 show_sources = st.sidebar.checkbox(
     show_sources_label,
     value=True,
@@ -635,28 +598,15 @@ st.sidebar.caption(sidebar_reminder)
 # ---------- RETRIEVER CACHING ----------
 @st.cache_resource
 def load_shared_retriever(rerank: bool) -> HybridFAQRetriever:
-    # Combined multilingual index (kb_all_*): one shared embedding space,
-    # same-language preferred, cross-lingual fallback. Query language is set
-    # per request below.
-    r = HybridFAQRetriever(language="en", rerank=rerank, shared=True,
-                           data_dir=DEFAULT_DATA_DIR, top_k=DEFAULT_TOP_K,
-                           embedding_model=DEFAULT_EMBEDDING_MODEL,
-                           rerank_model=DEFAULT_RERANK_MODEL,
-                           rerank_top_n=DEFAULT_RERANK_TOP_N)
-    r.load()
-    return r
+    # Combined multilingual index (kb_all_*); the query language is set per
+    # request below.
+    return load_retriever(ARGS, "en", shared=True, rerank=rerank)
 
 @st.cache_resource
 def load_perlang_retriever(lang: str, rerank: bool) -> HybridFAQRetriever:
-    r = HybridFAQRetriever(language=lang, rerank=rerank,
-                           data_dir=DEFAULT_DATA_DIR, top_k=DEFAULT_TOP_K,
-                           embedding_model=DEFAULT_EMBEDDING_MODEL,
-                           rerank_model=DEFAULT_RERANK_MODEL,
-                           rerank_top_n=DEFAULT_RERANK_TOP_N)
-    r.load()
-    return r
+    return load_retriever(ARGS, lang, shared=False, rerank=rerank)
 
-if active_scope == "language":
+if ARGS.retrieval_scope == "language":
     # Language-only: search just the query-language corpus (kb_<lang>). No
     # cross-lingual fallback. If that index is missing, fall back to the shared
     # index so the app still answers.
@@ -717,11 +667,9 @@ def handle_send():
             retriever=retriever,
             user_query=user_input_val,
             use_llm=use_llm,
-            llm_model=DEFAULT_LLM_MODEL,
+            llm_model=ARGS.llm_model,
             debug=False,
-            sem_accept_threshold=SEM_ACCEPT_THRESHOLD,
-            rerank_accept_threshold=RERANK_ACCEPT_THRESHOLD,
-            dense_floor=DENSE_FLOOR,
+            **gate_kwargs(ARGS),
         )
         answered, answer_text = res.answered, res.answer_text.strip()
     except Exception as e:

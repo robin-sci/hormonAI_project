@@ -44,20 +44,24 @@ This document provides guidance for AI coding assistants (such as Claude, GitHub
    - `LLMWrapperWriter`: Ollama client (`/api/generate`) for grounded rephrasing; records `last_error` so fallbacks are surfaced
    - `build_abstain()`: language-specific refusal text
 
-4. **chatbot.py**: Command-line interface
+4. **config.py**: Launch options shared by CLI, GUI and eval harness
+   - Every flag defined once, defaulting to its `HORMONAI_*` env var; `load_retriever()` and `gate_kwargs()` helpers
+   - Add new options here, never in an entry point
+
+5. **chatbot.py**: Command-line interface
    - Interactive REPL-style chatbot; `--debug` prints retrieval/decision details
 
-5. **hormonai_app.py**: Streamlit GUI
+6. **hormonai_app.py**: Streamlit GUI
    - User-friendly web interface ("Mona"), with sample prompts
    - Language switching, LLM toggle, reranking options
    - Language scope: combined index with cross-lingual fallback, or query-language corpus only (`--retrieval-scope`; operator-only, defaults to `shared` in the GUI)
    - Accepts the same launch arguments as the CLI (Streamlit passthrough after `--`)
    - Conversation history; sources shown in a "Sources used for this answer" panel (kept out of the answer body)
 
-6. **audit_logger.py**: Query logging system
+7. **audit_logger.py**: Query logging system
    - Appends JSONL events (default `logs/audit.jsonl`): query, language, answered, used_llm, source, rounded `timing_ms`, meta
 
-7. **tools/latency_report.py**: p50/p95/p99 latency from the audit log
+8. **tools/latency_report.py**: p50/p95/p99 latency from the audit log
 
 ---
 
@@ -94,7 +98,7 @@ The three dense channels share one encoded query vector.
 - **Rerank Score** (`rerank_score`, on by default; `--no-rerank` to disable): CrossEncoder second-pass reranking
   - Scores `(query, section + question + answer)` pairs
   - Overrides the fused ordering when enabled
-  - Reranks only the top-N fused candidates for latency (`--rerank-top-n` / `HORMONAI_RERANK_TOP_N`; CLI default 5, retriever default 20)
+  - Reranks only the top-N fused candidates for latency (`--rerank-top-n` / `HORMONAI_RERANK_TOP_N`, default 5)
   - Loads lazily and degrades gracefully if unavailable
 
 ### Answer / Abstain Decision (semantic-first)

@@ -64,3 +64,28 @@ def test_gui_answers_with_sources(monkeypatch):
     first_line = expected.answer_text.splitlines()[0]
     assert html.escape(first_line) in rendered
     assert any(e.label == "Sources used for this answer" for e in at.expander)
+
+
+def test_eval_harness_runs_on_both_scopes(monkeypatch, capsys):
+    import eval_retrieval
+
+    for scope in ("language", "shared"):
+        monkeypatch.setattr(sys, "argv", [
+            "eval_retrieval.py", "--data-dir", DATA_DIR, "--retrieval-scope", scope,
+        ])
+        assert eval_retrieval.main() in (0, 1)
+        out = capsys.readouterr().out
+        assert "CORE CASES" in out and "FALSE-ANSWER" in out
+        assert ("kb_all_*" in out) == (scope == "shared")
+
+
+def test_interface_defaults(monkeypatch):
+    from config import parse_args
+
+    monkeypatch.delenv("HORMONAI_RETRIEVAL_SCOPE", raising=False)
+    monkeypatch.delenv("HORMONAI_RERANK_TOP_N", raising=False)
+    assert parse_args(default_scope="language", argv=[]).retrieval_scope == "language"  # CLI
+    gui = parse_args(default_scope="shared", argv=[])  # GUI
+    assert (gui.retrieval_scope, gui.rerank, gui.rerank_top_n) == ("shared", True, 5)
+    monkeypatch.setenv("HORMONAI_RETRIEVAL_SCOPE", "Shared")
+    assert parse_args(default_scope="language", argv=[]).retrieval_scope == "shared"
