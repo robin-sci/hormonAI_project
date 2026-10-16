@@ -635,7 +635,7 @@ st.sidebar.caption(sidebar_reminder)
 # ---------- RETRIEVER CACHING ----------
 @st.cache_resource
 def load_shared_retriever(rerank: bool) -> HybridFAQRetriever:
-    # Combined multilingual index (faq_all_*): one shared embedding space,
+    # Combined multilingual index (kb_all_*): one shared embedding space,
     # same-language preferred, cross-lingual fallback. Query language is set
     # per request below.
     r = HybridFAQRetriever(language="en", rerank=rerank, shared=True,
@@ -656,20 +656,16 @@ def load_perlang_retriever(lang: str, rerank: bool) -> HybridFAQRetriever:
     r.load()
     return r
 
-retriever = None
-retrieval_mode = None
 if active_scope == "language":
     # Language-only: search just the query-language corpus (kb_<lang>). No
     # cross-lingual fallback. If that index is missing, fall back to the shared
     # index so the app still answers.
     try:
         retriever = load_perlang_retriever(language, use_rerank)
-        retrieval_mode = "language-only"
     except Exception:
         try:
             retriever = load_shared_retriever(use_rerank)
             retriever.language = language
-            retrieval_mode = "shared (per-language index unavailable)"
         except Exception as e:
             st.error(f"Error loading knowledge base for language '{language}': {e}")
             st.stop()
@@ -679,11 +675,9 @@ else:
     try:
         retriever = load_shared_retriever(use_rerank)
         retriever.language = language  # active query language on the shared corpus
-        retrieval_mode = "shared"
     except Exception:
         try:
             retriever = load_perlang_retriever(language, use_rerank)
-            retrieval_mode = "per-language"
         except Exception as e:
             st.error(f"Error loading knowledge base for language '{language}': {e}")
             st.stop()
@@ -703,23 +697,13 @@ if language != st.session_state.last_language or use_rerank != st.session_state.
     st.session_state.last_language = language
     st.session_state.last_rerank = use_rerank
 
-# ---------- HANDLE SEND ----------
+# ---------- AUDIT LOGGER ----------
 @st.cache_resource
 def _get_audit_logger(path: str) -> AuditLogger:
     return AuditLogger(path)
 
 
 # ---------- HANDLE SEND ----------
-def _coerce_answer_result(res: object) -> tuple[bool, str]:
-    if isinstance(res, dict):
-        answered = bool(res.get("answered", False))
-        answer_text = str(res.get("answer_text", "")).strip()
-        return answered, answer_text
-    answered = bool(getattr(res, "answered", False))
-    answer_text = str(getattr(res, "answer_text", "")).strip()
-    return answered, answer_text
-
-
 def handle_send():
     user_input_val = st.session_state.get("user_input", "").strip()
     if not user_input_val:
@@ -739,7 +723,7 @@ def handle_send():
             rerank_accept_threshold=RERANK_ACCEPT_THRESHOLD,
             dense_floor=DENSE_FLOOR,
         )
-        answered, answer_text = _coerce_answer_result(res)
+        answered, answer_text = res.answered, res.answer_text.strip()
     except Exception as e:
         if language == "fr":
             answered, answer_text = False, (

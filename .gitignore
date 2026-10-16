@@ -17,3 +17,6 @@ corpus/
 
 # OS cruft
 .DS_Store
+
+# Test artifacts
+.pytest_cache/

@@ -447,7 +447,6 @@ class AnswerResult:
     answered: bool
     answer_text: str
     source_title: Optional[str] = None
-    source_section: Optional[str] = None
     source_index: Optional[int] = None
     source_indices: Optional[List[int]] = None   # positional indices of every bundled source
     sources_text: Optional[str] = None            # formatted citations, kept OUT of answer_text
@@ -509,7 +508,7 @@ class HybridFAQRetriever:
 
         # Per-language corpus statistics for IDF-weighted anchor extraction
         # (replaces the hand-maintained stopword / generic / emotion lists).
-        # Keyed by language: {lang: {df, idf, avg, stems, size}}. Accessors use
+        # Keyed by language: {lang: {df, idf, size}}. Accessors use
         # the ACTIVE query language so the same combined corpus serves both.
         self._stats_by_lang: Dict[str, Dict[str, Any]] = {}
 
@@ -556,11 +555,7 @@ class HybridFAQRetriever:
         for lg, d in df_by_lang.items():
             size = max(1, size_by_lang.get(lg, 1))
             idf = {s: math.log((size + 1) / (c + 1)) + 1.0 for s, c in d.items()}
-            avg = (sum(idf.values()) / len(idf)) if idf else 0.0
-            self._stats_by_lang[lg] = {
-                "df": dict(d), "idf": idf, "avg": avg,
-                "stems": set(d.keys()), "size": size,
-            }
+            self._stats_by_lang[lg] = {"df": dict(d), "idf": idf, "size": size}
 
         with open(bm25_path, "rb") as f:
             payload_bm25 = pickle.load(f)
@@ -615,20 +610,12 @@ class HybridFAQRetriever:
     def _active_stats(self) -> Dict[str, Any]:
         """Corpus statistics for the active query language."""
         return self._stats_by_lang.get(
-            self.language, {"df": {}, "idf": {}, "avg": 0.0, "stems": set(), "size": 1}
+            self.language, {"df": {}, "idf": {}, "size": 1}
         )
 
     @property
     def corpus_size(self) -> int:
         return self._active_stats()["size"]
-
-    def stem_in_corpus(self, stem: str) -> bool:
-        """True if the stem (or a synonym) appears in the active-language corpus."""
-        stems = self._active_stats()["stems"]
-        if not stems:
-            return True  # stats unavailable: do not prune
-        acceptable = _concept_match_stems(stem, self.language)
-        return len(stems.intersection(acceptable)) > 0
 
     def df(self, stem: str) -> int:
         """Document frequency of a stem (max over its synonym group)."""
@@ -642,10 +629,6 @@ class HybridFAQRetriever:
         acceptable = _concept_match_stems(stem, self.language)
         vals = [idf_map[a] for a in acceptable if a in idf_map]
         return min(vals) if vals else 0.0
-
-    @property
-    def average_idf(self) -> float:
-        return self._active_stats()["avg"]
 
     def retrieve(self, user_query: str) -> List[RetrievalCandidate]:
         # Per-query latency breakdown, readable via `retriever.last_timing_ms`
@@ -783,7 +766,7 @@ def _candidate_title(c: RetrievalCandidate) -> str:
     return hp or src or (c.section or "").strip()
 
 
-def _format_bundle_body(language: str, bundle: List[RetrievalCandidate]) -> str:
+def _format_bundle_body(bundle: List[RetrievalCandidate]) -> str:
     if not bundle:
         return ""
     parts: List[str] = []
@@ -815,13 +798,6 @@ def _format_sources(language: str, bundle: List[RetrievalCandidate]) -> str:
             cite = f"{src} — {hp}" if (hp and src and hp != src) else src
             lines.append(f"**— {label}** {cite}")
     return "\n\n".join(lines).strip()
-
-
-def _format_full_answer(language: str, body: str, sources: str) -> str:
-    pre = _format_preface(language)
-    if sources:
-        return (pre + (body or "").strip() + "\n\n" + sources).strip()
-    return (pre + (body or "").strip()).strip()
 
 
 def _bundle_source_text(bundle: List[RetrievalCandidate]) -> str:
@@ -938,7 +914,7 @@ def _reframe_survival(text: str, language: str) -> str:
 
 
 # ---------------------------
-# Empathy + LLM wrapper (unchanged behavior)
+# Empathy + LLM wrapper
 # ---------------------------
 
 _EMPATHY_BANK_EN = [
@@ -980,50 +956,16 @@ class LLMWrapperWriter:
         language: str,
         model: str = "llama3.2",
         temperature: float = 0.6,
-        max_tokens: int = 120,
         timeout_s: int = 60,
     ):
         self.language = _norm_lang(language)
         self.model = model
         self.temperature = temperature
-        self.max_tokens = max_tokens
         self.timeout_s = timeout_s
         # Set by _generate on each call: the connection/HTTP error string if the
         # local LLM (Ollama) could not be reached, else None. Lets callers report
         # WHY a rephrase fell back to verbatim instead of failing silently.
         self.last_error: Optional[str] = None
-
-    def _system_prompt(self) -> str:
-        if self.language == "fr":
-            return (
-                "Tu es un assistant très bienveillant et rassurant.\n\n"
-                "TÂCHE: Écris UNIQUEMENT un court préambule empathique (1–2 phrases) et, si utile, "
-                "UNE phrase invitant à en parler avec l'équipe soignante.\n\n"
-                "RÈGLES STRICTES:\n"
-                "- N'écris AUCUN fait médical, aucun détail pratique.\n"
-                "- N'invente rien sur la situation de la personne.\n"
-                "- Ne donne aucune statistique, aucun ordre de grandeur, aucune explication technique.\n"
-                "- Emploie un langage doux et non alarmant ; n'évoque pas la mort, le décès ni le pronostic.\n"
-                "- N'inclus pas de citations, ni de sections.\n"
-                "- 2–3 phrases MAX.\n"
-            )
-        return (
-            "You are a calm, deeply caring assistant.\n\n"
-            "TASK: Write ONLY a short empathetic preface (1–2 sentences) and, if helpful, "
-            "ONE sentence encouraging the person to discuss with their medical/care team.\n\n"
-            "STRICT RULES:\n"
-            "- Provide NO medical facts and no practical details.\n"
-            "- Do not assume anything about the person’s situation.\n"
-            "- Do not provide statistics, magnitudes, or technical explanations.\n"
-            "- Use gentle, non-alarming language; do not mention death, dying, or prognosis.\n"
-            "- No citations/sections.\n"
-            "- 2–3 sentences MAX.\n"
-        )
-
-    def _user_prompt(self, user_query: str) -> str:
-        if self.language == "fr":
-            return f"Question utilisateur: {user_query}\n\nPréambule empathique:"
-        return f"User question: {user_query}\n\nEmpathetic preface:"
 
     # ---- grounded rephrasing (strictly uses the provided source text) ----
 
@@ -1129,10 +1071,6 @@ class LLMWrapperWriter:
             self.last_error = f"{type(e).__name__}: {e}"
             return ""
 
-    def write(self, user_query: str) -> str:
-        """Empathy-only preface (no facts). Unchanged behavior."""
-        return self._generate(self._system_prompt(), self._user_prompt(user_query), self.max_tokens)
-
     def rephrase(self, user_query: str, source_text: str, max_tokens: int = 400) -> str:
         """Rephrase the provided source text into a grounded, clear, empathetic answer.
         Returns "" on failure so the caller can fall back to verbatim output."""
@@ -1179,18 +1117,12 @@ def _select_bundle_with_coverage(
     language: str,
     anchor_concepts: Set[str],
     max_n: int = 3,
-    min_member_sim: Optional[float] = None,
 ) -> Tuple[List[RetrievalCandidate], Dict[str, Any]]:
     """
     Greedily build a bundle that covers as many anchor concepts as possible.
 
-    The FIRST (lead) member is always the highest-scoring candidate that covers
-    anything. SECONDARY members must also be independently relevant: if
-    `min_member_sim` is set, a secondary candidate is only added when its dense
-    similarity clears that bar. This prevents a strong lead answer from being
-    padded with low-relevance entries that happen to share a weak keyword
-    (e.g. "long flights" / "stay hydrated" for a "how long do I stay on it?"
-    question).
+    The first (lead) member is the highest-scoring candidate that covers
+    anything; each further member must cover at least one new concept.
     """
     lang = _norm_lang(language)
     ranked = sorted(candidates, key=_score_candidate, reverse=True)
@@ -1210,11 +1142,6 @@ def _select_bundle_with_coverage(
             continue
         if cov.issubset(covered):
             continue
-
-        # Quality bar for secondary members (the lead is always allowed).
-        if bundle and min_member_sim is not None:
-            if c.dense_sim is not None and c.dense_sim < min_member_sim:
-                continue
 
         bundle.append(c)
         covered |= cov
@@ -1306,7 +1233,6 @@ def _crosslingual_notice(query_lang: str, answer_lang: str) -> str:
 
 
 def _decide_bundle(
-    retriever: "HybridFAQRetriever",
     cands: List[RetrievalCandidate],
     lang: str,
     anchor_concepts: Set[str],
@@ -1437,7 +1363,6 @@ def answer_query(
     sem_accept_threshold: float = 0.62,
     rerank_accept_threshold: float = -1.0,  # mmarco cross-encoder scores relevant items ~ -1..+2
     dense_floor: float = 0.50,
-    coverage_fraction: float = 0.5,  # deprecated: kept for call compatibility
 ) -> AnswerResult:
     """
     SEMANTIC-FIRST answer/abstain decision.
@@ -1523,12 +1448,12 @@ def answer_query(
         same, cross = candidates, []
 
     notice = ""
-    bundle = _decide_bundle(retriever, same, lang, anchor_concepts, strong_anchors,
+    bundle = _decide_bundle(same, lang, anchor_concepts, strong_anchors,
                             stats_intent, thresholds, dbg, debug)
 
     if bundle is None and cross:
         cross_dbg: Dict[str, Any] = {}
-        cross_bundle = _decide_bundle(retriever, cross, lang, anchor_concepts, strong_anchors,
+        cross_bundle = _decide_bundle(cross, lang, anchor_concepts, strong_anchors,
                                       stats_intent, thresholds, cross_dbg, debug)
         if cross_bundle is not None:
             bundle = cross_bundle
@@ -1554,8 +1479,8 @@ def answer_query(
 
     def _verbatim_answer() -> str:
         # FAQ content quoted verbatim + fixed empathy sentence (original behavior).
-        faq_body = _format_bundle_body(lang, bundle)
-        factual_block = _format_full_answer(lang, faq_body, "")
+        faq_body = _format_bundle_body(bundle)
+        factual_block = (_format_preface(lang) + faq_body).strip()
         prefix = _fallback_empathy(lang, user_query, bundle[0].question)
         return (prefix + notice_block + factual_block).strip()
 
@@ -1602,7 +1527,6 @@ def answer_query(
         answered=True,
         answer_text=answer_text,
         source_title=_candidate_title(top),   # FAQ question or article source, never a filename breadcrumb
-        source_section=top.section,
         source_index=top.index,
         source_indices=[c.index for c in bundle],
         sources_text=sources,
@@ -1642,9 +1566,6 @@ def print_debug(result: AnswerResult) -> None:
         print("[DEBUG] timing_ms: retrieve={:.0f} rerank={:.0f} (n={}) llm={:.0f} total={:.0f}".format(
             t.get("retrieve", 0.0), t.get("rerank", 0.0), t.get("n_reranked", 0),
             t.get("llm", 0.0), t.get("total", 0.0)))
-
-    if "stats_required_concepts" in result.debug:
-        print("[DEBUG] stats_required_concepts:", result.debug.get("stats_required_concepts"))
 
     if "coverage_gate" in result.debug:
         print("[DEBUG] coverage_gate:", result.debug.get("coverage_gate"))

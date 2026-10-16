@@ -16,5 +16,5 @@ from fakes import install_fake_sentence_transformers  # noqa: E402
 # Must run before rag_core is imported anywhere.
 install_fake_sentence_transformers()
 
-# Legacy standalone scripts, not pytest tests.
-collect_ignore = ["test_retreival.py", "inspect_qa.py", "eval_retrieval.py", "pdf_fidelity.py"]
+# Standalone command-line scripts, not pytest tests.
+collect_ignore = ["eval_retrieval.py", "pdf_fidelity.py"]

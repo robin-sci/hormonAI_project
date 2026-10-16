@@ -312,6 +312,20 @@ python tests/eval_retrieval.py --lang fr --json results.json      # one language
 
 Re-run it after any change to models, thresholds, ingestion or `rag_core.py`.
 
+### Automated tests
+
+```bash
+pip install pytest
+python -m pytest tests/
+```
+
+The tests need no model downloads: they run the committed indexes and the real pipeline with deterministic stand-in models. `test_snapshot.py` compares every patient-visible output (answers, sources, decision path) across seven configurations with `tests/snapshots/pipeline.json`, so a refactor that changes any answer fails. When a change is *meant* to alter answers, regenerate the snapshot and review the diff:
+
+```bash
+UPDATE_SNAPSHOT=1 python -m pytest tests/test_snapshot.py
+git diff --stat tests/snapshots/
+```
+
 ### PDF extraction fidelity
 
 PDF extraction is the weakest link, and for a medical tool a garbled number or a dropped "not" is a safety issue. Check it before ingesting:
@@ -363,8 +377,10 @@ python tools/latency_report.py --answered-only --lang en
 │   ├── eval_set.jsonl     # Gold evaluation cases (EN + FR)
 │   ├── eval_retrieval.py  # Evaluation harness
 │   ├── pdf_fidelity.py    # PDF extraction checks
-│   ├── inspect_qa.py      # Legacy: inspect faq_* items
-│   └── test_retreival.py  # Legacy: retrieval smoke test on faq_* indexes
+│   ├── test_snapshot.py   # Snapshot of every pipeline output (refactoring safety net)
+│   ├── test_smoke.py      # CLI and Streamlit GUI end-to-end smoke tests
+│   ├── fakes.py           # Deterministic stand-in models used by the tests
+│   └── snapshots/         # Recorded pipeline outputs
 └── tools/
     └── latency_report.py  # p50/p95/p99 latency from the audit log
 ```

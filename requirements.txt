@@ -30,7 +30,6 @@ mpmath==1.3.0
 narwhals==2.14.0
 networkx==3.6.1
 numpy==2.4.0
-openai==2.14.0
 packaging==25.0
 pandas==2.3.3
 pillow==12.0.0

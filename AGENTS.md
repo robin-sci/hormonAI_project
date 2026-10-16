@@ -212,7 +212,11 @@ Source documents, organized by language (`corpus/en/`, `corpus/fr/`) and referen
 - `tests/eval_set.jsonl`: Gold eval cases (EN + FR, categorized, with `expected_answerable` and `gold_ids`)
 - `tests/eval_retrieval.py`: Runs the gold set — recall@k, false-answer and false-abstention rates
 - `tests/pdf_fidelity.py`: PDF extraction QA (per-source metrics + preview)
-- `tests/inspect_qa.py`, `tests/test_retreival.py`: Legacy scripts that target the old `faq_*` file layout
+- `tests/test_snapshot.py`: Snapshot of every patient-visible pipeline output across seven configurations (`tests/snapshots/pipeline.json`); run with `python -m pytest tests/`
+- `tests/test_smoke.py`: CLI and Streamlit GUI end-to-end smoke tests
+- `tests/fakes.py`: Deterministic stand-in embedder, reranker and Ollama, so tests need no model downloads
+
+Any refactor must keep `python -m pytest tests/` green without regenerating the snapshot. A change that is meant to alter answers regenerates it (`UPDATE_SNAPSHOT=1`) and the diff is reviewed.
 
 ### When Adding Tests
 
