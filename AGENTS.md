@@ -98,14 +98,14 @@ The three dense channels share one encoded query vector.
   - Scores `(query, section + question + answer)` pairs
   - Overrides the fused ordering when enabled
   - Reranks only the top-N fused candidates for latency (`--rerank-top-n` / `HORMONAI_RERANK_TOP_N`, default 5)
-  - Loads lazily and degrades gracefully if unavailable
+  - Loaded at startup; falls back to the fused ordering if it cannot be loaded
 
 ### Answer / Abstain Decision (semantic-first)
 
 `answer_query()` accepts if EITHER:
 
 1. **Primary**: the top candidate's relevance clears its threshold — `rerank_score >= --rerank-threshold` (default -1.0) when reranking is on, else `dense_sim >= --sem-threshold` (default 0.62)
-2. **Lexical safety net**: a candidate covers a high-IDF query anchor and is at least `--dense-floor` (default 0.50) cosine-similar
+2. **Lexical safety net**: a candidate covers a rare query anchor (present in at most 15 % of the corpus) and is at least `--dense-floor` (default 0.50) cosine-similar
 
 Additional behavior:
 - IDF anchors no longer gate the answer; they shape multi-concept bundles (up to 3 sources) and provide the safety net
@@ -215,7 +215,7 @@ Source documents, organized by language (`corpus/en/`, `corpus/fr/`) and referen
 - `tests/eval_set.jsonl`: Gold eval cases (EN + FR, categorized, with `expected_answerable` and `gold_ids`)
 - `tests/eval_retrieval.py`: Runs the gold set — recall@k, false-answer and false-abstention rates
 - `tests/pdf_fidelity.py`: PDF extraction QA (per-source metrics + preview)
-- `tests/test_snapshot.py`: Snapshot of every patient-visible pipeline output across seven configurations (`tests/snapshots/pipeline.json`); run with `uv run pytest`
+- `tests/test_snapshot.py`: Snapshot of every patient-visible pipeline output across eight configurations (`tests/snapshots/pipeline.json`); run with `uv run pytest`
 - `tests/test_smoke.py`: CLI and Streamlit GUI end-to-end smoke tests
 - `tests/fakes.py`: Deterministic stand-in embedder, reranker and Ollama, so tests need no model downloads
 
@@ -382,7 +382,7 @@ To add support for a new language:
 1. **Retrieval speed**: Keep top-k and `rerank_top_n` low; the query is encoded once for all dense channels
 2. **Memory usage**: Stream large files, manage index sizes
 3. **LLM latency**: Rephrasing is optional and only runs for answered queries
-4. **Startup time**: Lazy-load models (the CrossEncoder loads lazily), cache indexes
+4. **Startup time**: Load models and indexes once at startup and cache them (the GUI uses `st.cache_resource`)
 
 ### Benchmarking
 

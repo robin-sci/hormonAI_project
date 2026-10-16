@@ -1,6 +1,7 @@
-from __future__ import annotations
 """Hybrid retrieval over the knowledge-base indexes: BM25 + three FAISS
 channels fused with Reciprocal Rank Fusion, optional CrossEncoder rerank."""
+
+from __future__ import annotations
 
 import math
 import os

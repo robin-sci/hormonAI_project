@@ -1,6 +1,7 @@
-from __future__ import annotations
 """Text processing: language codes, tokenizing, stemming, synonyms,
 statistics-intent detection and IDF-weighted query anchors."""
+
+from __future__ import annotations
 
 import re
 from dataclasses import dataclass

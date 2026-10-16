@@ -164,7 +164,7 @@ The three dense channels use the same query vector, encoded once.
 ### Fusion and reranking
 
 1. **Reciprocal Rank Fusion.** Each candidate's ranks are combined as `Σ 1 / (60 + rank)` across the four channels and stored as `fused_score`. This is an ordering score, not a similarity. The best cosine similarity across the dense channels is kept separately as `dense_sim`.
-2. **CrossEncoder reranking** (on by default, disable with `--no-rerank`). The top-N fused candidates (`--rerank-top-n`) are scored as `(question, section + question + answer)` pairs; the result, `rerank_score`, replaces the fused ordering. The reranker loads lazily and the system degrades gracefully if it is unavailable.
+2. **CrossEncoder reranking** (on by default, disable with `--no-rerank`). The top-N fused candidates (`--rerank-top-n`) are scored as `(question, section + question + answer)` pairs; the result, `rerank_score`, replaces the fused ordering. The reranker is loaded at startup; if it cannot be loaded, the system falls back to the fused ordering.
 
 ---
 
@@ -175,7 +175,7 @@ The three dense channels use the same query vector, encoded once.
 `answer_query()` decides **semantic-first** whether the knowledge base actually answers the question. It answers if either:
 
 1. **Primary signal:** the top candidate's relevance clears its threshold: `rerank_score ≥ --rerank-threshold` when reranking is on, otherwise `dense_sim ≥ --sem-threshold`.
-2. **Lexical safety net:** a candidate contains a rare, specific term from the question (an IDF-weighted *anchor* with above-average IDF) **and** is at least `--dense-floor` cosine-similar.
+2. **Lexical safety net:** a candidate contains a rare, specific term from the question (an *anchor* term that appears in at most 15 % of the knowledge-base entries) **and** is at least `--dense-floor` cosine-similar.
 
 Additional rules:
 
@@ -285,7 +285,7 @@ All options are defined once in `config.py` and shared by the CLI, the GUI and t
 | `HORMONAI_EMBEDDING_MODEL` | `sentence-transformers/paraphrase-multilingual-mpnet-base-v2` | Embedding model (Hub id or local path). Must match ingestion. |
 | `HORMONAI_RERANK_MODEL` | `cross-encoder/mmarco-mMiniLMv2-L12-H384-v1` | Reranker (Hub id or local path). |
 | `HORMONAI_RERANK_TOP_N` | `5` | Rerank only the top-N fused candidates. Lower is faster. |
-| `HORMONAI_RETRIEVAL_SCOPE` | GUI `shared`; CLI and eval `language` | `shared` or `language`; see [Language scope](#language-scope). |
+| `HORMONAI_RETRIEVAL_SCOPE` | GUI `shared`; CLI and eval `language` | `shared` or `language` (case-insensitive); see [Language scope](#language-scope). |
 | `HORMONAI_RERANK_THRESHOLD` | `-1.0` | Accept threshold on the reranker score. Model-specific. |
 | `HORMONAI_SEM_THRESHOLD` | `0.62` | Dense-cosine accept threshold (reranking off). |
 | `HORMONAI_DENSE_FLOOR` | `0.50` | Cosine floor for the lexical safety net. |
@@ -319,7 +319,7 @@ Re-run it after any change to models, thresholds, ingestion or the `hormonai/` p
 uv run pytest
 ```
 
-The tests need no model downloads: they run the committed indexes and the real pipeline with deterministic stand-in models. `test_snapshot.py` compares every patient-visible output (answers, sources, decision path) across seven configurations with `tests/snapshots/pipeline.json`, so a refactor that changes any answer fails. When a change is *meant* to alter answers, regenerate the snapshot and review the diff:
+The tests need no model downloads: they run the committed indexes and the real pipeline with deterministic stand-in models. `test_snapshot.py` compares every patient-visible output (answers, sources, decision path) across eight configurations with `tests/snapshots/pipeline.json`, so a refactor that changes any answer fails. When a change is *meant* to alter answers, regenerate the snapshot and review the diff:
 
 ```bash
 UPDATE_SNAPSHOT=1 uv run pytest tests/test_snapshot.py

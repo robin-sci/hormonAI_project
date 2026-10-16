@@ -1,5 +1,6 @@
-from __future__ import annotations
 """Local LLM (Ollama) client for grounded rephrasing of retrieved text."""
+
+from __future__ import annotations
 
 import json
 import os

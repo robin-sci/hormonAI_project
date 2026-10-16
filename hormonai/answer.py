@@ -1,7 +1,8 @@
-from __future__ import annotations
 """Answer/abstain decision, answer formatting and compassionate wording.
 
 answer_query() is the single entry point used by the CLI, GUI and eval."""
+
+from __future__ import annotations
 
 import hashlib
 import re

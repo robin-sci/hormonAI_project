@@ -853,6 +853,6 @@ st.text_area(
     placeholder=placeholder,
 )
 
-col1, col2 = st.columns([1, 4])
+col1, _ = st.columns([1, 4])
 with col1:
     st.button("Send" if language == "en" else "Envoyer", on_click=handle_send)
