@@ -168,7 +168,7 @@ Before adding a new package:
 
 1. Verify it's necessary and well-maintained
 2. Check license compatibility (project is MIT)
-3. Add to `requirements.txt` with version pinning
+3. Add it with `uv add <package>` (dev-only tools: `uv add --dev`) and commit `pyproject.toml` and `uv.lock`
 4. Test installation in clean environment
 5. Document usage in README if user-facing
 
@@ -212,11 +212,11 @@ Source documents, organized by language (`corpus/en/`, `corpus/fr/`) and referen
 - `tests/eval_set.jsonl`: Gold eval cases (EN + FR, categorized, with `expected_answerable` and `gold_ids`)
 - `tests/eval_retrieval.py`: Runs the gold set — recall@k, false-answer and false-abstention rates
 - `tests/pdf_fidelity.py`: PDF extraction QA (per-source metrics + preview)
-- `tests/test_snapshot.py`: Snapshot of every patient-visible pipeline output across seven configurations (`tests/snapshots/pipeline.json`); run with `python -m pytest tests/`
+- `tests/test_snapshot.py`: Snapshot of every patient-visible pipeline output across seven configurations (`tests/snapshots/pipeline.json`); run with `uv run pytest`
 - `tests/test_smoke.py`: CLI and Streamlit GUI end-to-end smoke tests
 - `tests/fakes.py`: Deterministic stand-in embedder, reranker and Ollama, so tests need no model downloads
 
-Any refactor must keep `python -m pytest tests/` green without regenerating the snapshot. A change that is meant to alter answers regenerates it (`UPDATE_SNAPSHOT=1`) and the diff is reviewed.
+Any refactor must keep `uv run pytest` green without regenerating the snapshot. A change that is meant to alter answers regenerates it (`UPDATE_SNAPSHOT=1`) and the diff is reviewed.
 
 ### When Adding Tests
 

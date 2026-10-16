@@ -1,0 +1,26 @@
+[project]
+name = "hormonai"
+version = "1.0.0"
+description = "Knowledge-base-restricted RAG chatbot for adjuvant hormone therapy in breast cancer (EN/FR)."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+dependencies = [
+    "faiss-cpu==1.13.2",
+    "numpy==2.4.0",
+    "pymupdf==1.28.0",
+    "pypdf==6.13.1",
+    "python-docx==1.2.0",
+    "rank-bm25==0.2.2",
+    "sentence-transformers==5.2.0",
+    "streamlit==1.52.2",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+]
+
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

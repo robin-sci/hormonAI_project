@@ -57,10 +57,8 @@ The system has two phases: **ingestion** (offline, run once per corpus or model 
 ## Quickstart
 
 ```bash
-# 1. Environment
-python3 -m venv hormonai_env
-source hormonai_env/bin/activate
-pip install -r requirements.txt
+# 1. Environment (installs Python deps into .venv from uv.lock)
+uv sync
 
 # 2. Choose models (must be the same for ingestion and querying)
 export HORMONAI_EMBEDDING_MODEL="BAAI/bge-m3"
@@ -68,12 +66,14 @@ export HORMONAI_RERANK_MODEL="BAAI/bge-reranker-v2-m3"
 
 # 3. Put the source documents under corpus/en and corpus/fr, list them in manifest.json,
 #    then build the indexes
-python ingest.py --manifest manifest.json --embedding-model "$HORMONAI_EMBEDDING_MODEL"
+uv run python ingest.py --manifest manifest.json --embedding-model "$HORMONAI_EMBEDDING_MODEL"
 
 # 4. Chat
-python chatbot.py -l en                 # CLI
-streamlit run hormonai_app.py           # GUI
+uv run python chatbot.py -l en                 # CLI
+uv run streamlit run hormonai_app.py           # GUI
 ```
+
+hormonAI uses [uv](https://docs.astral.sh/uv/) for dependencies: `pyproject.toml` lists the direct dependencies and `uv.lock` pins every package, so all installs are identical. Install uv with `curl -LsSf https://astral.sh/uv/install.sh | sh` (or `pip install uv`). Add a dependency with `uv add <package>` and a dev-only tool with `uv add --dev <package>`; both update `uv.lock`, which must be committed.
 
 The source documents are available here: [HormonAI corpus](https://www.dropbox.com/scl/fo/wufdoiep8biwrrjygfska/AAnfOC0u-pUUPFAuDTzhncI?rlkey=u2fn41qvhf0vuo7az0vms6tnt&dl=0). The `corpus/` directory is not tracked in git.
 
@@ -108,17 +108,17 @@ Sources are declared in a JSON manifest that tags each file's `type` and `lang`:
 By default `ingest.py` builds **both** the combined multilingual index (`kb_all_*`) and the per-language indexes (`kb_en_*`, `kb_fr_*`):
 
 ```bash
-python ingest.py --manifest manifest.json --embedding-model "BAAI/bge-m3"
+uv run python ingest.py --manifest manifest.json --embedding-model "BAAI/bge-m3"
 
 # larger article chunks, shared index only
-python ingest.py --manifest manifest.json --embedding-model "BAAI/bge-m3" \
+uv run python ingest.py --manifest manifest.json --embedding-model "BAAI/bge-m3" \
   --chunk-size 300 --chunk-overlap 50 --no-per-language
 
 # A/B a second model into a separate prefix (kb_bgem3_all_*, ...)
-python ingest.py --manifest manifest.json --embedding-model "BAAI/bge-m3" --out-prefix kb_bgem3
+uv run python ingest.py --manifest manifest.json --embedding-model "BAAI/bge-m3" --out-prefix kb_bgem3
 
 # quick run without a manifest
-python ingest.py --language en --faq corpus/en/FAQ_Hormono_EN.docx \
+uv run python ingest.py --language en --faq corpus/en/FAQ_Hormono_EN.docx \
   --article corpus/en/BCN-Tamoxifen.pdf --embedding-model "BAAI/bge-m3"
 ```
 
@@ -139,8 +139,8 @@ Each index prefix produces five files:
 `ingest_faq.py` is the original FAQ-only pipeline. It handles neither articles nor the shared index, and writes `faq_{lang}_*` files. It can generate question paraphrases with Ollama for the paraphrase index:
 
 ```bash
-python ingest_faq.py -l en -d corpus/en/FAQ_Hormono_EN.docx
-python ingest_faq.py -l en --augment-questions --paraphrase-n 6 -d corpus/en/FAQ_Hormono_EN.docx
+uv run python ingest_faq.py -l en -d corpus/en/FAQ_Hormono_EN.docx
+uv run python ingest_faq.py -l en --augment-questions --paraphrase-n 6 -d corpus/en/FAQ_Hormono_EN.docx
 ```
 
 ---
@@ -222,9 +222,9 @@ Override the endpoint with `OLLAMA_HOST` and the model with `--llm-model` / `HOR
 ### CLI
 
 ```bash
-python chatbot.py -l en --debug                              # per-language index, retrieval details
-python chatbot.py -l fr --retrieval-scope shared             # shared index with cross-lingual fallback
-python chatbot.py -l en --use-llm \
+uv run python chatbot.py -l en --debug                              # per-language index, retrieval details
+uv run python chatbot.py -l fr --retrieval-scope shared             # shared index with cross-lingual fallback
+uv run python chatbot.py -l en --use-llm \
   --rerank-model BAAI/bge-reranker-v2-m3 --rerank-threshold 0.2 --rerank-top-n 5
 ```
 
@@ -233,14 +233,14 @@ python chatbot.py -l en --use-llm \
 ### GUI
 
 ```bash
-streamlit run hormonai_app.py
-streamlit run hormonai_app.py -- --retrieval-scope language  # query-language corpus only
+uv run streamlit run hormonai_app.py
+uv run streamlit run hormonai_app.py -- --retrieval-scope language  # query-language corpus only
 ```
 
 The GUI accepts **the same launch arguments as the CLI**, passed after Streamlit's `--` separator:
 
 ```bash
-streamlit run hormonai_app.py -- \
+uv run streamlit run hormonai_app.py -- \
   --rerank-top-n 5 --rerank-model BAAI/bge-reranker-v2-m3 --rerank-threshold 0.2 --debug
 ```
 
@@ -305,9 +305,9 @@ The CLI, GUI and eval harness read the same environment variables, so a calibrat
 `tests/eval_retrieval.py` runs it through the real pipeline and reports decision accuracy, recall@k, lead-source correctness, gold-source-in-bundle, and the false-abstention and false-answer rates:
 
 ```bash
-python tests/eval_retrieval.py --shared --verbose                 # production (shared) path
-python tests/eval_retrieval.py --shared --rerank-threshold 0      # threshold sweep
-python tests/eval_retrieval.py --lang fr --json results.json      # one language, full results
+uv run python tests/eval_retrieval.py --shared --verbose                 # production (shared) path
+uv run python tests/eval_retrieval.py --shared --rerank-threshold 0      # threshold sweep
+uv run python tests/eval_retrieval.py --lang fr --json results.json      # one language, full results
 ```
 
 Re-run it after any change to models, thresholds, ingestion or `rag_core.py`.
@@ -315,14 +315,13 @@ Re-run it after any change to models, thresholds, ingestion or `rag_core.py`.
 ### Automated tests
 
 ```bash
-pip install pytest
-python -m pytest tests/
+uv run pytest
 ```
 
 The tests need no model downloads: they run the committed indexes and the real pipeline with deterministic stand-in models. `test_snapshot.py` compares every patient-visible output (answers, sources, decision path) across seven configurations with `tests/snapshots/pipeline.json`, so a refactor that changes any answer fails. When a change is *meant* to alter answers, regenerate the snapshot and review the diff:
 
 ```bash
-UPDATE_SNAPSHOT=1 python -m pytest tests/test_snapshot.py
+UPDATE_SNAPSHOT=1 uv run pytest tests/test_snapshot.py
 git diff --stat tests/snapshots/
 ```
 
@@ -331,8 +330,8 @@ git diff --stat tests/snapshots/
 PDF extraction is the weakest link, and for a medical tool a garbled number or a dropped "not" is a safety issue. Check it before ingesting:
 
 ```bash
-python tests/pdf_fidelity.py --manifest manifest.json
-python tests/pdf_fidelity.py --preview --only NCI-HT.pdf
+uv run python tests/pdf_fidelity.py --manifest manifest.json
+uv run python tests/pdf_fidelity.py --preview --only NCI-HT.pdf
 ```
 
 It reports per-source extraction health and exits non-zero if a PDF looks scanned or empty (no text layer).
@@ -350,8 +349,8 @@ It reports per-source extraction health and exits non-zero if a PDF looks scanne
 The reranker dominates per-query latency. `--rerank-top-n` is the main lever; a smaller reranker or a GPU also help. Aggregate logged timings into percentiles:
 
 ```bash
-python tools/latency_report.py
-python tools/latency_report.py --answered-only --lang en
+uv run python tools/latency_report.py
+uv run python tools/latency_report.py --answered-only --lang en
 ```
 
 ---
@@ -367,6 +366,8 @@ python tools/latency_report.py --answered-only --lang en
 ├── hormonai_app.py        # Streamlit GUI ("Mona")
 ├── audit_logger.py        # JSONL audit logger
 ├── manifest.json          # Ingestion manifest (path, type, lang)
+├── pyproject.toml         # Project metadata and direct dependencies (uv)
+├── uv.lock                # Exact versions of every dependency (commit it)
 ├── RETRIEVAL_REVIEW.md    # Retrieval design notes and change log
 ├── AGENTS.md              # Guidance for AI coding assistants
 ├── docs/diagrams/         # Architecture diagram (HTML source + light/dark SVG)
