@@ -20,7 +20,7 @@ from typing import Any, Dict, List
 
 import pytest
 
-import rag_core
+from hormonai import answer, llm, retrieval, text
 from fakes import fake_llm_generate, unreachable_llm_generate
 
 TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -67,8 +67,8 @@ def _queries() -> List[Dict[str, str]]:
 
 
 @lru_cache(maxsize=None)
-def _retriever(shared: bool, lang: str, rerank: bool) -> rag_core.HybridFAQRetriever:
-    r = rag_core.HybridFAQRetriever(
+def _retriever(shared: bool, lang: str, rerank: bool) -> retrieval.HybridFAQRetriever:
+    r = retrieval.HybridFAQRetriever(
         language=lang, data_dir=DATA_DIR, rerank=rerank, rerank_top_n=5, shared=shared,
     )
     r.load()
@@ -87,9 +87,9 @@ def _run_pipeline(monkeypatch: pytest.MonkeyPatch) -> Dict[str, Any]:
     out: Dict[str, Any] = {}
     for name, shared, rerank, use_llm, llm_mode, thresholds in CONFIGS:
         if llm_mode == "ok":
-            monkeypatch.setattr(rag_core.LLMWrapperWriter, "_generate", fake_llm_generate)
+            monkeypatch.setattr(llm.LLMWrapperWriter, "_generate", fake_llm_generate)
         elif llm_mode == "down":
-            monkeypatch.setattr(rag_core.LLMWrapperWriter, "_generate", unreachable_llm_generate)
+            monkeypatch.setattr(llm.LLMWrapperWriter, "_generate", unreachable_llm_generate)
         rows = {}
         queries = _queries()
         if use_llm:
@@ -97,7 +97,7 @@ def _run_pipeline(monkeypatch: pytest.MonkeyPatch) -> Dict[str, Any]:
         for q in queries:
             retriever = _retriever(shared, "en" if shared else q["lang"], rerank)
             retriever.language = q["lang"]
-            res = rag_core.answer_query(
+            res = answer.answer_query(
                 retriever=retriever, user_query=q["query"], use_llm=use_llm,
                 debug=True, **thresholds,
             )
@@ -143,14 +143,14 @@ def _helpers() -> Dict[str, Any]:
         "Est-ce que je peux arrêter ?", "", "1.",
     ]
     return {
-        "reframe": [[lang, t, rag_core._reframe_survival(t, lang)] for lang, t in reframe_inputs],
-        "preamble": [[t, rag_core._strip_llm_preamble(t)] for t in preamble_inputs],
-        "stats_intent": [[lang, t, rag_core._is_stats_intent(t, lang)] for lang, t in stats_inputs],
-        "tokenize": [[t, rag_core._tokenize(t)] for t in ["ménopause", "anti-hormone therapy", "Tamoxifen 20mg!"]],
-        "looks_like_question": [[t, rag_core._looks_like_faq_question(t)] for t in question_inputs],
-        "crosslingual_notice": [rag_core._crosslingual_notice(a, b) for a, b in
+        "reframe": [[lang, t, answer._reframe_survival(t, lang)] for lang, t in reframe_inputs],
+        "preamble": [[t, llm._strip_llm_preamble(t)] for t in preamble_inputs],
+        "stats_intent": [[lang, t, text._is_stats_intent(t, lang)] for lang, t in stats_inputs],
+        "tokenize": [[t, text._tokenize(t)] for t in ["ménopause", "anti-hormone therapy", "Tamoxifen 20mg!"]],
+        "looks_like_question": [[t, text._looks_like_faq_question(t)] for t in question_inputs],
+        "crosslingual_notice": [answer._crosslingual_notice(a, b) for a, b in
                                 [("en", "fr"), ("fr", "en"), ("en", "en")]],
-        "abstain": [rag_core.build_abstain("en"), rag_core.build_abstain("fr")],
+        "abstain": [answer.build_abstain("en"), answer.build_abstain("fr")],
     }
 
 

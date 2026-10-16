@@ -9,18 +9,18 @@ import sys
 
 import pytest
 
-import rag_core
+from hormonai import answer, retrieval
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(REPO_ROOT, "data")
 QUESTION = "How long will I be on hormone therapy?"
 
 
-def _expected(language: str, shared: bool) -> rag_core.AnswerResult:
-    r = rag_core.HybridFAQRetriever(language=language, data_dir=DATA_DIR, rerank=True,
+def _expected(language: str, shared: bool) -> answer.AnswerResult:
+    r = retrieval.HybridFAQRetriever(language=language, data_dir=DATA_DIR, rerank=True,
                                     rerank_top_n=5, shared=shared)
     r.load()
-    return rag_core.answer_query(retriever=r, user_query=QUESTION)
+    return answer.answer_query(retriever=r, user_query=QUESTION)
 
 
 def test_cli_answers_logs_and_cites(monkeypatch, capsys, tmp_path):

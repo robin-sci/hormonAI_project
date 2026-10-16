@@ -42,7 +42,8 @@ from typing import Any, Dict, List
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from config import add_retrieval_args, gate_kwargs, load_retriever  # noqa: E402
-from rag_core import HybridFAQRetriever, answer_query  # noqa: E402
+from hormonai.answer import answer_query  # noqa: E402
+from hormonai.retrieval import HybridFAQRetriever  # noqa: E402
 
 
 def load_cases(path: str) -> List[Dict[str, Any]]:

@@ -37,12 +37,11 @@ This document provides guidance for AI coding assistants (such as Claude, GitHub
    - Writes `faq_{lang}_*` files by default
    - Optional offline question paraphrasing via Ollama (`--augment-questions`) for the paraphrase index
 
-3. **rag_core.py**: Core RAG logic
-   - `HybridFAQRetriever`: four-channel retrieval with RRF fusion, optional CrossEncoder reranking, per-language IDF statistics
-   - `extract_anchor_concepts()`: IDF-weighted lexical anchors (no hand-maintained stopword lists)
-   - `answer_query()`: semantic-first answer/abstain decision, bundle selection, cross-lingual fallback, optional LLM rephrasing; returns an `AnswerResult`
-   - `LLMWrapperWriter`: Ollama client (`/api/generate`) for grounded rephrasing; records `last_error` so fallbacks are surfaced
-   - `build_abstain()`: language-specific refusal text
+3. **hormonai/** package: Core RAG logic
+   - `text.py`: tokenizing, stemming, synonyms, statistics-intent detection, `extract_anchor_concepts()` (IDF-weighted lexical anchors, no hand-maintained stopword lists)
+   - `retrieval.py`: `HybridFAQRetriever` (four-channel retrieval with RRF fusion, optional CrossEncoder reranking, per-language IDF statistics) and `RetrievalCandidate`
+   - `llm.py`: `LLMWrapperWriter`, the Ollama client (`/api/generate`) for grounded rephrasing; records `last_error` so fallbacks are surfaced; `_strip_llm_preamble()`
+   - `answer.py`: `answer_query()` (semantic-first answer/abstain decision, bundle selection, cross-lingual fallback, optional LLM rephrasing; returns an `AnswerResult`), answer formatting, `_reframe_survival()`, `build_abstain()`, `print_debug()`
 
 4. **config.py**: Launch options shared by CLI, GUI and eval harness
    - Every flag defined once, defaulting to its `HORMONAI_*` env var; `load_retriever()` and `gate_kwargs()` helpers
@@ -158,7 +157,7 @@ When adding functionality:
 
 ### Modifying Retrieval Logic
 
-When changing `rag_core.py`:
+When changing `hormonai/retrieval.py` or `hormonai/answer.py`:
 
 - Maintain backward compatibility with existing indexes (`kb_*` and legacy `faq_*`)
 - Consider impact on both scoring paths (dense vs rerank)
@@ -283,7 +282,7 @@ To add support for a new language:
 1. **Documents**: Obtain FAQ / articles in that language and add them to `manifest.json` with the new `lang`
 2. **Ingest**: Run `ingest.py --manifest manifest.json` (extend the `--language` choices as needed)
 3. **Embedding Model**: Verify multilingual support
-4. **Stemming / anchors**: Add stemming support in `rag_core.py` (`_stem`) and language-specific strings (abstain text, notices, prompts)
+4. **Stemming / anchors**: Add stemming support in `hormonai/text.py` (`_stem`) and language-specific strings (abstain text, notices, prompts)
 5. **UI Strings**: Add translations to both CLI and Streamlit
 6. **Testing**: Add eval cases to `tests/eval_set.jsonl`
 7. **Documentation**: Update README with the new language
@@ -303,7 +302,8 @@ To add support for a new language:
 
 ```python
 # Locations to modify:
-# - rag_core.py: HybridFAQRetriever.retrieve(), _decide_bundle(), answer_query()
+# - hormonai/retrieval.py: HybridFAQRetriever.retrieve()
+# - hormonai/answer.py: _decide_bundle(), answer_query()
 # - Tune top_k / rerank_top_n, thresholds (sem/rerank/dense-floor)
 # - Try other embedding / reranker models (re-ingest + re-calibrate)
 # - Measure with tests/eval_retrieval.py (both languages, both scopes)
@@ -324,7 +324,7 @@ To add support for a new language:
 
 ```python
 # Tuning locations:
-# - rag_core.py: LLMWrapperWriter._rephrase_system_prompt() / rephrase()
+# - hormonai/llm.py: LLMWrapperWriter._rephrase_system_prompt() / rephrase()
 # - Adjust temperature (default 0.6) and num_predict
 # - Keep _strip_llm_preamble / _reframe_survival post-processing
 # - Test tone and empathy with medical stakeholders

@@ -17,7 +17,7 @@ import os
 import sys
 
 from config import gate_kwargs, load_retriever, parse_args
-from rag_core import answer_query, print_debug
+from hormonai.answer import answer_query, print_debug
 from audit_logger import AuditLogger
 
 

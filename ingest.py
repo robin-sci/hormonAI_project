@@ -30,16 +30,16 @@ uniform:
       "q_paraphrases": [],
     }
 
-The retriever (rag_core) reads question/section/answer/source_type, so this
+The retriever (hormonai.retrieval) reads question/section/answer/source_type, so this
 schema is a compatible superset of the original one.
 
 Embedding is model-agnostic: pass any SentenceTransformer with
 --embedding-model. For models that need instruction prefixes (e.g. e5:
 "query:" / "passage:") pass --passage-prefix / --query-prefix; the query
-prefix is stored in the payload and used by rag_core at query time. mpnet and
+prefix is stored in the payload and used by hormonai.retrieval at query time. mpnet and
 BGE-M3 need no prefixes.
 
-Outputs, per language, match the names rag_core loads:
+Outputs, per language, match the names hormonai.retrieval loads:
     {data_dir}/{out_prefix}_{lang}_qa.pkl
     {data_dir}/{out_prefix}_{lang}_bm25.pkl
     {data_dir}/{out_prefix}_{lang}_index_q.faiss
@@ -399,7 +399,7 @@ def parse_article(
 
 
 # ---------------------------------------------------------------------------
-# Embedding text builders (shared by ingest and, in spirit, rag_core queries)
+# Embedding text builders (shared by ingest and, in spirit, hormonai.retrieval queries)
 # ---------------------------------------------------------------------------
 
 def _lead_snippet(text: str, n_words: int = 40) -> str:
@@ -565,13 +565,13 @@ def main() -> None:
                     help="Language for --faq/--article convenience flags.")
     ap.add_argument("--data-dir", default="data")
     ap.add_argument("--out-prefix", default="kb",
-                    help="Output basename; rag_core loads '<prefix>_<lang>_*' and '<prefix>_all_*'. Default: kb.")
+                    help="Output basename; the retriever loads '<prefix>_<lang>_*' and '<prefix>_all_*'. Default: kb.")
     ap.add_argument("--embedding-model",
                     default="sentence-transformers/paraphrase-multilingual-mpnet-base-v2")
     ap.add_argument("--passage-prefix", default="",
                     help="Prefix prepended to document text before encoding (e.g. 'passage: ' for e5).")
     ap.add_argument("--query-prefix", default="",
-                    help="Prefix rag_core prepends to the query (e.g. 'query: ' for e5). Stored in payload.")
+                    help="Prefix the retriever prepends to the query (e.g. 'query: ' for e5). Stored in payload.")
     ap.add_argument("--chunk-size", type=int, default=250, help="Article chunk size in words.")
     ap.add_argument("--chunk-overlap", type=int, default=40, help="Article chunk overlap in words.")
     ap.add_argument("--shared", action=argparse.BooleanOptionalAction, default=True,

@@ -11,7 +11,7 @@ import argparse
 import os
 from typing import Any, Dict, List, Optional
 
-from rag_core import HybridFAQRetriever
+from hormonai.retrieval import HybridFAQRetriever
 
 
 def add_retrieval_args(p: argparse.ArgumentParser, default_scope: str) -> None:

@@ -45,7 +45,8 @@ The system has two phases: **ingestion** (offline, run once per corpus or model 
 |---|---|
 | `ingest.py` | Type-aware ingestion: parses FAQ and article documents, chunks them, embeds them and writes the indexes. |
 | `ingest_faq.py` | Legacy FAQ-only ingestion (writes `faq_{lang}_*`); can generate question paraphrases with Ollama. |
-| `rag_core.py` | Retrieval (`HybridFAQRetriever`), answer/abstain decision (`answer_query`), LLM rephrasing (`LLMWrapperWriter`), guardrails. |
+| `hormonai/` | Core package: `text.py` (tokenizing, stemming, query keywords), `retrieval.py` (`HybridFAQRetriever`), `answer.py` (answer/abstain decision, formatting, guardrails, `answer_query`), `llm.py` (Ollama rephrasing). |
+| `config.py` | Launch options shared by the CLI, GUI and eval harness. |
 | `chatbot.py` | Interactive command-line chatbot. |
 | `hormonai_app.py` | Streamlit GUI with language switching, LLM toggle, conversation history and a sources panel. |
 | `audit_logger.py` | JSONL audit log of queries and decisions. |
@@ -310,7 +311,7 @@ uv run python tests/eval_retrieval.py --retrieval-scope shared --rerank-threshol
 uv run python tests/eval_retrieval.py --lang fr --json results.json      # one language, full results
 ```
 
-Re-run it after any change to models, thresholds, ingestion or `rag_core.py`.
+Re-run it after any change to models, thresholds, ingestion or the `hormonai/` package.
 
 ### Automated tests
 
@@ -361,7 +362,11 @@ uv run python tools/latency_report.py --answered-only --lang en
 .
 ├── ingest.py              # Type-aware ingestion (FAQ + articles, shared + per-language indexes)
 ├── ingest_faq.py          # Legacy FAQ-only ingestion
-├── rag_core.py            # Retriever, answer/abstain gate, cross-lingual fallback, LLM rephrasing
+├── hormonai/              # Core package
+│   ├── text.py            # Tokenizing, stemming, synonyms, query keywords (anchors)
+│   ├── retrieval.py       # HybridFAQRetriever: BM25 + FAISS, rank fusion, reranking
+│   ├── answer.py          # answer_query(): answer/abstain gate, formatting, guardrails
+│   └── llm.py             # Ollama client for grounded rephrasing
 ├── chatbot.py             # Command-line chatbot
 ├── config.py              # Launch options shared by CLI, GUI and eval
 ├── hormonai_app.py        # Streamlit GUI ("Mona")

@@ -1,5 +1,7 @@
 # hormonAI retrieval review
 
+> **Note (2026-10):** `rag_core.py` has since been split into the `hormonai/` package (`text.py`, `retrieval.py`, `answer.py`, `llm.py`). References to `rag_core.py` and its line numbers below describe the code as it was at the time of this review.
+
 Date: 2026-07-23
 Scope: `rag_core.py`, `ingest_faq.py`, `chatbot.py`, `data/kb_{en,fr}_*`
 Corpus size at review: EN = 73 items, FR = 69 items (parsed from a single adjuvant-hormone-therapy DOCX per language).

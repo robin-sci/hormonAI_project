@@ -13,7 +13,7 @@ for path in (REPO_ROOT, TESTS_DIR):
 
 from fakes import install_fake_sentence_transformers  # noqa: E402
 
-# Must run before rag_core is imported anywhere.
+# Must run before the hormonai package is imported anywhere.
 install_fake_sentence_transformers()
 
 # Standalone command-line scripts, not pytest tests.

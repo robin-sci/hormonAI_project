@@ -4,7 +4,8 @@ import re
 import streamlit as st
 
 from config import gate_kwargs, load_retriever, parse_args
-from rag_core import HybridFAQRetriever, answer_query
+from hormonai.answer import answer_query
+from hormonai.retrieval import HybridFAQRetriever
 from audit_logger import AuditLogger
 
 # ---------- BASIC PAGE CONFIG ----------
