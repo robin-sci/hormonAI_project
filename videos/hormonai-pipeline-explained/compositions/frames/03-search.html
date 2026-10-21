@@ -1,0 +1,458 @@
+<template>
+  <style>
+    @font-face {
+      font-family: "Inter";
+      src: url("assets/fonts/inter-latin-400-normal.woff2") format("woff2");
+      font-weight: 400;
+      font-style: normal;
+      font-display: block;
+    }
+    @font-face {
+      font-family: "Inter";
+      src: url("assets/fonts/inter-latin-500-normal.woff2") format("woff2");
+      font-weight: 500;
+      font-style: normal;
+      font-display: block;
+    }
+    @font-face {
+      font-family: "Space Grotesk";
+      src: url("assets/fonts/space-grotesk-latin-500-normal.woff2") format("woff2");
+      font-weight: 500;
+      font-style: normal;
+      font-display: block;
+    }
+    @font-face {
+      font-family: "Space Grotesk";
+      src: url("assets/fonts/space-grotesk-latin-600-normal.woff2") format("woff2");
+      font-weight: 600;
+      font-style: normal;
+      font-display: block;
+    }
+
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      font-family: "Inter", sans-serif;
+      color: #111111;
+    }
+
+    .f03-search-ground {
+      position: absolute;
+      inset: 0;
+      background: #fdfae7;
+      container-type: size;
+    }
+    .f03-search-layer {
+      position: absolute;
+      inset: 0;
+    }
+
+    /* ---- progress rail (shared by frames 03–07) ---- */
+    .f03-search-rail-svg {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1920px;
+      height: 120px;
+      overflow: visible;
+    }
+    .f03-search-rail-svg path {
+      fill: none;
+      stroke: rgba(30, 43, 250, 0.2);
+      stroke-width: 2;
+      stroke-linecap: round;
+    }
+    .f03-search-pill {
+      position: absolute;
+      top: 40px;
+      width: 176px;
+      height: 44px;
+      margin-left: -88px;
+      border-radius: 100px;
+      border: 1.5px solid rgba(30, 43, 250, 0.2);
+      background: #fdfae7;
+      color: #6b6b6b;
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 500;
+      font-size: 18px;
+      letter-spacing: 0.02em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      white-space: nowrap;
+    }
+
+    /* ---- step title + tag ---- */
+    .f03-search-title {
+      position: absolute;
+      left: 96px;
+      top: 124px;
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 600;
+      font-size: 50px;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      color: #111111;
+      white-space: nowrap;
+    }
+    .f03-search-tag {
+      position: absolute;
+      right: 96px;
+      top: 140px;
+      height: 44px;
+      padding: 0 22px;
+      border-radius: 100px;
+      background: rgba(30, 43, 250, 0.08);
+      color: #6b6b6b;
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 500;
+      font-size: 22px;
+      display: flex;
+      align-items: center;
+      white-space: nowrap;
+    }
+    .f03-search-tag b {
+      color: #1e2bfa;
+      font-weight: 600;
+      margin-left: 0.3em;
+    }
+
+    /* ---- stage ---- */
+    .f03-search-stage {
+      position: absolute;
+      inset: 0;
+      transform-origin: 1200px 570px;
+    }
+    .f03-search-conn-svg {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1920px;
+      height: 1080px;
+      overflow: visible;
+    }
+    .f03-search-conn-svg path {
+      fill: none;
+      stroke: #1e2bfa;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      opacity: 0.55;
+    }
+
+    .f03-search-qcard {
+      position: absolute;
+      left: 96px;
+      top: 478px;
+      width: 444px;
+      height: 184px;
+      padding: 0 32px;
+      border-radius: 14px;
+      background: rgba(30, 43, 250, 0.04);
+      border: 1.5px solid rgba(30, 43, 250, 0.2);
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .f03-search-qmark {
+      flex: 0 0 auto;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #1e2bfa;
+      color: #fdfae7;
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 600;
+      font-size: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .f03-search-qtext {
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 500;
+      font-size: 32px;
+      line-height: 1.3;
+      letter-spacing: -0.02em;
+      color: #111111;
+    }
+
+    .f03-search-lane {
+      position: absolute;
+      left: 660px;
+      width: 1164px;
+      height: 126px;
+      padding: 14px 20px 16px;
+      border-radius: 14px;
+      background: rgba(30, 43, 250, 0.04);
+      border: 1.5px solid rgba(30, 43, 250, 0.2);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .f03-search-lane-label {
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 600;
+      font-size: 26px;
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+      color: #111111;
+      white-space: nowrap;
+    }
+    .f03-search-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      height: 52px;
+    }
+    .f03-search-chip {
+      flex: 0 0 auto;
+      height: 52px;
+      border-radius: 100px;
+      background: #fdfae7;
+      border: 1.5px solid rgba(30, 43, 250, 0.2);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 16px;
+    }
+    .f03-search-chip i {
+      font-style: normal;
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 600;
+      font-size: 19px;
+      color: #1e2bfa;
+    }
+    .f03-search-skel {
+      width: 96px;
+    }
+    .f03-search-skel span {
+      display: block;
+      flex: 1 1 auto;
+      height: 8px;
+      border-radius: 6px;
+      background: rgba(30, 43, 250, 0.15);
+    }
+    .f03-search-hit {
+      background: rgba(30, 43, 250, 0.15);
+    }
+    .f03-search-hit span {
+      font-family: "Inter", sans-serif;
+      font-weight: 500;
+      font-size: 21px;
+      color: #111111;
+      white-space: nowrap;
+    }
+    .f03-search-end {
+      margin-left: auto;
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 500;
+      font-size: 20px;
+      color: #9a9a9a;
+      white-space: nowrap;
+    }
+  </style>
+
+  <div id="root" data-composition-id="03-search" data-width="1920" data-height="1080">
+    <div
+      id="f03-search-ground"
+      class="clip f03-search-ground"
+      data-start="0"
+      data-duration="8"
+      data-track-index="0"
+    ></div>
+
+    <div id="f03-search-layer" class="clip f03-search-layer" data-start="0" data-duration="8" data-track-index="1">
+      <!-- progress rail -->
+      <svg class="f03-search-rail-svg" viewBox="0 0 1920 120" aria-hidden="true">
+        <path id="f03-search-rail-line" d="M 184 62 L 1736 62" />
+      </svg>
+      <div class="f03-search-pill" id="f03-search-pill-1" style="left: 184px">1 Search</div>
+      <div class="f03-search-pill" style="left: 572px">2 Merge</div>
+      <div class="f03-search-pill" style="left: 960px">3 Rerank</div>
+      <div class="f03-search-pill" style="left: 1348px">4 Check</div>
+      <div class="f03-search-pill" style="left: 1736px">5 Answer</div>
+
+      <!-- step title + end tag -->
+      <div class="f03-search-title" id="f03-search-title">1 · Search</div>
+      <div class="f03-search-tag" id="f03-search-tag">each search returns its <b>top 40</b></div>
+
+      <!-- stage -->
+      <div class="f03-search-stage" id="f03-search-stage">
+        <svg class="f03-search-conn-svg" viewBox="0 0 1920 1080" aria-hidden="true">
+          <path class="f03-search-conn" d="M 540 570 C 610 570, 590 333, 660 333" />
+          <path class="f03-search-conn" d="M 540 570 C 610 570, 590 491, 660 491" />
+          <path class="f03-search-conn" d="M 540 570 C 610 570, 590 649, 660 649" />
+          <path class="f03-search-conn" d="M 540 570 C 610 570, 590 807, 660 807" />
+        </svg>
+
+        <div class="f03-search-qcard" id="f03-search-qcard">
+          <div class="f03-search-qmark">?</div>
+          <div class="f03-search-qtext">How long will I be on tamoxifen?</div>
+        </div>
+
+        <!-- lane 1: hit at #1 -->
+        <div class="f03-search-lane" style="top: 270px">
+          <div class="f03-search-lane-label">Keywords (BM25)</div>
+          <div class="f03-search-row">
+            <div class="f03-search-chip f03-search-hit"><i>#1</i><span>How long do I need to take hormone therapy?</span></div>
+            <div class="f03-search-chip f03-search-skel"><i>#2</i><span></span></div>
+            <div class="f03-search-chip f03-search-skel"><i>#3</i><span></span></div>
+            <div class="f03-search-chip f03-search-skel"><i>#4</i><span></span></div>
+            <div class="f03-search-chip f03-search-skel"><i>#5</i><span></span></div>
+            <div class="f03-search-end">… top 40</div>
+          </div>
+        </div>
+
+        <!-- lane 2: hit at #2 -->
+        <div class="f03-search-lane" style="top: 428px">
+          <div class="f03-search-lane-label">Meaning of the question</div>
+          <div class="f03-search-row">
+            <div class="f03-search-chip f03-search-skel"><i>#1</i><span></span></div>
+            <div class="f03-search-chip f03-search-hit"><i>#2</i><span>How long do I need to take hormone therapy?</span></div>
+            <div class="f03-search-chip f03-search-skel"><i>#3</i><span></span></div>
+            <div class="f03-search-chip f03-search-skel"><i>#4</i><span></span></div>
+            <div class="f03-search-chip f03-search-skel"><i>#5</i><span></span></div>
+            <div class="f03-search-end">… top 40</div>
+          </div>
+        </div>
+
+        <!-- lane 3: hit at #1 -->
+        <div class="f03-search-lane" style="top: 586px">
+          <div class="f03-search-lane-label">Question + answer</div>
+          <div class="f03-search-row">
+            <div class="f03-search-chip f03-search-hit"><i>#1</i><span>How long do I need to take hormone therapy?</span></div>
+            <div class="f03-search-chip f03-search-skel"><i>#2</i><span></span></div>
+            <div class="f03-search-chip f03-search-skel"><i>#3</i><span></span></div>
+            <div class="f03-search-chip f03-search-skel"><i>#4</i><span></span></div>
+            <div class="f03-search-chip f03-search-skel"><i>#5</i><span></span></div>
+            <div class="f03-search-end">… top 40</div>
+          </div>
+        </div>
+
+        <!-- lane 4: hit at #3 -->
+        <div class="f03-search-lane" style="top: 744px">
+          <div class="f03-search-lane-label">Rewordings</div>
+          <div class="f03-search-row">
+            <div class="f03-search-chip f03-search-skel"><i>#1</i><span></span></div>
+            <div class="f03-search-chip f03-search-skel"><i>#2</i><span></span></div>
+            <div class="f03-search-chip f03-search-hit"><i>#3</i><span>How long do I need to take hormone therapy?</span></div>
+            <div class="f03-search-chip f03-search-skel"><i>#4</i><span></span></div>
+            <div class="f03-search-chip f03-search-skel"><i>#5</i><span></span></div>
+            <div class="f03-search-end">… top 40</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+
+      const byId = (id) => document.getElementById(id);
+      const cls = (scope, name) =>
+        Array.from(scope.querySelectorAll('[class~="f03-search-' + name + '"]'));
+
+      const stage = byId("f03-search-stage");
+      const layerRoot = stage.parentNode;
+      const railLine = byId("f03-search-rail-line");
+      const pills = cls(layerRoot, "pill");
+      const pill1 = byId("f03-search-pill-1");
+      const title = byId("f03-search-title");
+      const tag = byId("f03-search-tag");
+      const qcard = byId("f03-search-qcard");
+      const conns = cls(stage, "conn");
+      const lanes = cls(stage, "lane");
+
+      // svg-path-draw setup: measured lengths
+      [railLine].concat(conns).forEach((p) => {
+        const len = p.getTotalLength() * 1.02;
+        p.style.strokeDasharray = String(len);
+        p.style.strokeDashoffset = String(len);
+      });
+
+      /* Scene 1 (0.0–1.4s): rail draws, pill 1 fills, title, question card */
+      tl.to(railLine, { strokeDashoffset: 0, duration: 0.7, ease: "power2.out" }, 0.05);
+      tl.fromTo(
+        pills,
+        { opacity: 0, scale: 0.9 },
+        { opacity: 1, scale: 1, duration: 0.35, ease: "power2.out", stagger: 0.1 },
+        0.05,
+      );
+      tl.fromTo(
+        pill1,
+        { backgroundColor: "#fdfae7", color: "#6b6b6b", borderColor: "rgba(30,43,250,0.2)" },
+        {
+          backgroundColor: "#1e2bfa",
+          color: "#fdfae7",
+          borderColor: "rgba(30,43,250,1)",
+          duration: 0.4,
+          ease: "power1.out",
+        },
+        0.65,
+      );
+      tl.fromTo(
+        title,
+        { opacity: 0, y: 18 },
+        { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" },
+        0.25,
+      );
+      // empty lane slots established early (faint), they light up on their cue
+      tl.fromTo(
+        lanes,
+        { opacity: 0 },
+        { opacity: 0.3, duration: 0.5, ease: "power1.out", stagger: 0.06 },
+        0.3,
+      );
+      tl.fromTo(
+        qcard,
+        { opacity: 0, x: -60 },
+        { opacity: 1, x: 0, duration: 0.6, ease: "power3.out" },
+        0.6,
+      );
+
+      /* Scene 2 (1.4–5.6s): one lane per ~1s — connector draws, lane lights, chips cascade */
+      lanes.forEach((lane, i) => {
+        const t0 = 1.4 + i * 1.0;
+        const label = cls(lane, "lane-label")[0];
+        const chips = cls(lane, "chip");
+        tl.to(conns[i], { strokeDashoffset: 0, duration: 0.45, ease: "power2.out" }, t0);
+        tl.to(lane, { opacity: 1, duration: 0.3, ease: "power1.out" }, t0 + 0.3);
+        tl.fromTo(
+          label,
+          { opacity: 0, x: -14 },
+          { opacity: 1, x: 0, duration: 0.35, ease: "power2.out" },
+          t0 + 0.32,
+        );
+        tl.fromTo(
+          chips,
+          { opacity: 0, x: -18, scale: 0.94 },
+          { opacity: 1, x: 0, scale: 1, duration: 0.32, ease: "power2.out", stagger: 0.08 },
+          t0 + 0.45,
+        );
+      });
+
+      /* Scene 3 (5.6–8.0s): "top 40" lane ends + tag, slow push-in hold */
+      const ends = cls(stage, "end");
+      tl.fromTo(
+        ends,
+        { opacity: 0, x: -10 },
+        { opacity: 1, x: 0, duration: 0.35, ease: "power1.out", stagger: 0.08 },
+        5.6,
+      );
+      tl.fromTo(
+        tag,
+        { opacity: 0, y: 12 },
+        { opacity: 1, y: 0, duration: 0.45, ease: "power2.out" },
+        5.85,
+      );
+      tl.fromTo(stage, { scale: 1 }, { scale: 1.012, duration: 2.4, ease: "sine.inOut" }, 5.6);
+
+      window.__timelines["03-search"] = tl;
+    })();
+  </script>
+</template>

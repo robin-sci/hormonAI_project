@@ -1,0 +1,447 @@
+<template>
+  <style>
+    @font-face { font-family: "Inter"; src: url("assets/fonts/inter-latin-400-normal.woff2") format("woff2"); font-weight: 400; font-style: normal; }
+    @font-face { font-family: "Inter"; src: url("assets/fonts/inter-latin-500-normal.woff2") format("woff2"); font-weight: 500; font-style: normal; }
+    @font-face { font-family: "Space Grotesk"; src: url("assets/fonts/space-grotesk-latin-500-normal.woff2") format("woff2"); font-weight: 500; font-style: normal; }
+    @font-face { font-family: "Space Grotesk"; src: url("assets/fonts/space-grotesk-latin-600-normal.woff2") format("woff2"); font-weight: 600; font-style: normal; }
+    @font-face { font-family: "Space Grotesk"; src: url("assets/fonts/space-grotesk-latin-700-normal.woff2") format("woff2"); font-weight: 700; font-style: normal; }
+
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      font-family: "Inter", sans-serif;
+      color: #111111;
+    }
+    .f07-answer-ground {
+      position: absolute;
+      inset: 0;
+      background: #fdfae7;
+    }
+
+    /* ---------- progress rail (shared across frames 03-07) ---------- */
+    .f07-answer-rail {
+      position: absolute;
+      left: 96px;
+      top: 52px;
+      width: 1728px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .f07-answer-rail-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 27px;
+      height: 2px;
+      background: rgba(30, 43, 250, 0.2);
+    }
+    .f07-answer-step {
+      position: relative;
+      width: 210px;
+      height: 56px;
+      border-radius: 100px;
+      border: 1.5px solid rgba(30, 43, 250, 0.2);
+      background: #fdfae7;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .f07-answer-step.f07-answer-done { background: #f5f2e5; }
+    .f07-answer-step-fill {
+      position: absolute;
+      inset: 0;
+      background: #1e2bfa;
+      border-radius: 100px;
+      transform-origin: 0% 50%;
+    }
+    .f07-answer-step-label {
+      position: relative;
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 600;
+      font-size: 22px;
+      letter-spacing: 0.01em;
+      color: #1e2bfa;
+      white-space: nowrap;
+    }
+    .f07-answer-step-label b {
+      font-weight: 700;
+      margin-right: 8px;
+    }
+
+    /* ---------- step title ---------- */
+    .f07-answer-title {
+      position: absolute;
+      left: 96px;
+      top: 150px;
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 600;
+      font-size: 50px;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      color: #111111;
+      white-space: nowrap;
+    }
+    .f07-answer-title span { color: #1e2bfa; }
+
+    /* ---------- answer bubble (focal) ---------- */
+    .f07-answer-bubble-wrap {
+      position: absolute;
+      left: 96px;
+      top: 252px;
+      width: 1060px;
+    }
+    .f07-answer-bubble-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 44px;
+      margin-bottom: 14px;
+    }
+    .f07-answer-mona {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 600;
+      font-size: 26px;
+      color: #111111;
+    }
+    .f07-answer-mona-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #1e2bfa;
+    }
+    .f07-answer-tag {
+      display: inline-flex;
+      align-items: center;
+      height: 44px;
+      padding: 0 22px;
+      border-radius: 100px;
+      background: rgba(30, 43, 250, 0.08);
+      color: #1e2bfa;
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 500;
+      font-size: 21px;
+      white-space: nowrap;
+    }
+    .f07-answer-bubble {
+      position: relative;
+      padding: 34px 40px 38px 40px;
+      background: rgba(30, 43, 250, 0.04);
+      border: 1.5px solid rgba(30, 43, 250, 0.2);
+      border-radius: 14px 14px 14px 4px;
+    }
+    .f07-answer-empathy {
+      font-family: "Inter", sans-serif;
+      font-weight: 400;
+      font-size: 28px;
+      line-height: 1.5;
+      color: #6b6b6b;
+      white-space: nowrap;
+    }
+    .f07-answer-rule {
+      height: 1.5px;
+      background: rgba(30, 43, 250, 0.2);
+      margin: 26px 0 24px 0;
+      transform-origin: 0% 50%;
+    }
+    .f07-answer-quote {
+      border-left: 4px solid #1e2bfa;
+      padding-left: 28px;
+    }
+    .f07-answer-q {
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 600;
+      font-size: 32px;
+      line-height: 1.3;
+      letter-spacing: -0.01em;
+      color: #111111;
+      white-space: nowrap;
+      margin-bottom: 14px;
+    }
+    .f07-answer-line {
+      display: block;
+      font-family: "Inter", sans-serif;
+      font-weight: 400;
+      font-size: 30px;
+      line-height: 1.5;
+      color: #111111;
+      white-space: nowrap;
+    }
+
+    /* ---------- sources panel (supporting, right) ---------- */
+    .f07-answer-sources {
+      position: absolute;
+      left: 1212px;
+      top: 310px;
+      width: 612px;
+      padding: 32px 36px 36px 36px;
+      background: rgba(30, 43, 250, 0.04);
+      border: 1.5px solid rgba(30, 43, 250, 0.2);
+      border-radius: 14px;
+    }
+    .f07-answer-sources-title {
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 600;
+      font-size: 22px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #1e2bfa;
+      white-space: nowrap;
+      margin-bottom: 24px;
+    }
+    .f07-answer-cite {
+      padding: 22px 24px 24px 24px;
+      background: rgba(30, 43, 250, 0.08);
+      border-left: 4px solid #1e2bfa;
+      border-radius: 12px;
+    }
+    .f07-answer-cite-q {
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 500;
+      font-size: 28px;
+      line-height: 1.3;
+      color: #111111;
+    }
+    .f07-answer-cite-s {
+      margin-top: 12px;
+      font-family: "Inter", sans-serif;
+      font-weight: 400;
+      font-size: 24px;
+      line-height: 1.45;
+      color: #6b6b6b;
+    }
+
+    /* ---------- LLM toggle + guardrail ---------- */
+    .f07-answer-toggle-row {
+      position: absolute;
+      left: 96px;
+      top: 770px;
+      width: 1728px;
+      height: 96px;
+      display: flex;
+      align-items: center;
+      gap: 28px;
+    }
+    .f07-answer-toggle {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      height: 84px;
+      padding: 0 30px 0 16px;
+      border-radius: 100px;
+      background: rgba(30, 43, 250, 0.04);
+      border: 1.5px solid rgba(30, 43, 250, 0.2);
+      transform-origin: 50% 50%;
+    }
+    .f07-answer-switch-zone {
+      position: relative;
+      width: 100px;
+      height: 56px;
+    }
+    .f07-answer-burst {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100px;
+      height: 56px;
+      border-radius: 100px;
+      background: radial-gradient(closest-side, rgba(30, 43, 250, 0.45), rgba(30, 43, 250, 0));
+      opacity: 0;
+      z-index: 1;
+    }
+    .f07-answer-switch {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100px;
+      height: 56px;
+      border-radius: 100px;
+      background: rgba(30, 43, 250, 0.15);
+      z-index: 2;
+      overflow: hidden;
+    }
+    .f07-answer-switch-on {
+      position: absolute;
+      inset: 0;
+      border-radius: 100px;
+      background: #1e2bfa;
+      opacity: 0;
+    }
+    .f07-answer-knob {
+      position: absolute;
+      left: 6px;
+      top: 6px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #fdfae7;
+    }
+    .f07-answer-toggle-label {
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 600;
+      font-size: 28px;
+      color: #111111;
+      white-space: nowrap;
+    }
+    .f07-answer-toggle-state {
+      font-family: "Inter", sans-serif;
+      font-weight: 500;
+      font-size: 22px;
+      color: #6b6b6b;
+      white-space: nowrap;
+    }
+    .f07-answer-caption {
+      font-family: "Inter", sans-serif;
+      font-weight: 500;
+      font-size: 28px;
+      color: #111111;
+      white-space: nowrap;
+    }
+    .f07-answer-guard {
+      margin-left: auto;
+      height: 52px;
+      font-size: 22px;
+    }
+  </style>
+
+  <div id="root" data-composition-id="07-answer" data-start="0" data-duration="8" data-width="1920" data-height="1080">
+    <div id="f07-answer-ground" class="f07-answer-ground clip" data-start="0" data-duration="8" data-track-index="0"></div>
+
+    <!-- progress rail -->
+    <div class="f07-answer-rail">
+      <div class="f07-answer-rail-line"></div>
+      <div class="f07-answer-step f07-answer-done"><span class="f07-answer-step-label"><b>1</b>Search</span></div>
+      <div class="f07-answer-step f07-answer-done"><span class="f07-answer-step-label"><b>2</b>Merge</span></div>
+      <div class="f07-answer-step f07-answer-done"><span class="f07-answer-step-label"><b>3</b>Rerank</span></div>
+      <div class="f07-answer-step" id="f07-answer-step4"><div class="f07-answer-step-fill f07-answer-s4-fill" id="f07-answer-s4fill"></div><span class="f07-answer-step-label f07-answer-s4-label" id="f07-answer-s4label"><b>4</b>Check</span></div>
+      <div class="f07-answer-step" id="f07-answer-step5"><div class="f07-answer-step-fill f07-answer-s5-fill" id="f07-answer-s5fill"></div><span class="f07-answer-step-label f07-answer-s5-label" id="f07-answer-s5label"><b>5</b>Answer</span></div>
+    </div>
+
+    <!-- step title -->
+    <div class="f07-answer-title" id="f07-answer-title"><span>5</span> · Answer</div>
+
+    <!-- Mona's answer bubble -->
+    <div class="f07-answer-bubble-wrap" id="f07-answer-bubble-wrap">
+      <div class="f07-answer-bubble-head">
+        <div class="f07-answer-mona" id="f07-answer-mona"><div class="f07-answer-mona-dot"></div>Mona</div>
+        <div class="f07-answer-tag" id="f07-answer-verbatim">Verbatim from the FAQ</div>
+      </div>
+      <div class="f07-answer-bubble" id="f07-answer-bubble">
+        <div class="f07-answer-empathy" id="f07-answer-empathy">It's understandable to want straightforward information.</div>
+        <div class="f07-answer-rule" id="f07-answer-rule"></div>
+        <div class="f07-answer-quote" id="f07-answer-quote">
+          <div class="f07-answer-q" id="f07-answer-q">How long do I need to take hormone therapy?</div>
+          <span class="f07-answer-line" id="f07-answer-l1">For hormone receptor-positive breast cancer, the treatment</span>
+          <span class="f07-answer-line" id="f07-answer-l2">lasts 5 to 10 years, depending on individual cancer</span>
+          <span class="f07-answer-line" id="f07-answer-l3">characteristics…</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- sources panel -->
+    <div class="f07-answer-sources" id="f07-answer-sources">
+      <div class="f07-answer-sources-title" id="f07-answer-sources-title">Sources used for this answer</div>
+      <div class="f07-answer-cite" id="f07-answer-cite">
+        <div class="f07-answer-cite-q" id="f07-answer-cite-q">How long do I need to take hormone therapy?</div>
+        <div class="f07-answer-cite-s" id="f07-answer-cite-s">— Section 1: General Information on Hormone Therapy</div>
+      </div>
+    </div>
+
+    <!-- LLM toggle + guardrail -->
+    <div class="f07-answer-toggle-row">
+      <div class="f07-answer-toggle" id="f07-answer-toggle">
+        <div class="f07-answer-switch-zone">
+          <div class="f07-answer-burst" id="f07-answer-burst"></div>
+          <div class="f07-answer-switch" id="f07-answer-switch">
+            <div class="f07-answer-switch-on" id="f07-answer-switch-on"></div>
+            <div class="f07-answer-knob" id="f07-answer-knob"></div>
+          </div>
+        </div>
+        <div class="f07-answer-toggle-label">Local LLM rewording</div>
+        <div class="f07-answer-toggle-state" id="f07-answer-state">off by default</div>
+      </div>
+      <div class="f07-answer-caption" id="f07-answer-caption">rewords only this text — adds nothing</div>
+      <div class="f07-answer-tag f07-answer-guard" id="f07-answer-guard">Survival-wording guardrail</div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var root = document.querySelector('[data-composition-id="07-answer"]');
+      var $ = function (id) { return root.querySelector("#f07-answer-" + id); };
+      var CREAM = "#fdfae7";
+      var COBALT = "#1e2bfa";
+      var tl = gsap.timeline({ paused: true });
+
+      // ---- Scene 1 (0.0-1.4s): rail advances, title, bubble + empathy line ----
+      var s4 = $("step4"), s5 = $("step5");
+      var s4fill = $("s4fill"), s4label = $("s4label");
+      var s5fill = $("s5fill"), s5label = $("s5label");
+      // "4 Check" starts active (solid) and turns to a done outline
+      tl.fromTo(s4fill, { opacity: 1 }, { opacity: 0, duration: 0.45, ease: "power2.out" }, 0.1);
+      tl.fromTo(s4label, { color: CREAM }, { color: COBALT, duration: 0.45, ease: "power2.out" }, 0.1);
+      tl.fromTo(s4, { backgroundColor: CREAM }, { backgroundColor: "#f5f2e5", duration: 0.45, ease: "power2.out" }, 0.1);
+      // "5 Answer" fills cobalt from the left
+      tl.fromTo(s5fill, { scaleX: 0 }, { scaleX: 1, duration: 0.55, ease: "power3.out" }, 0.3);
+      tl.fromTo(s5label, { color: "#9a9a9a" }, { color: CREAM, duration: 0.35, ease: "power2.out" }, 0.4);
+
+      tl.fromTo($("title"), { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 0.15);
+      tl.fromTo($("bubble-wrap"), { opacity: 0, y: 60 }, { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" }, 0.2);
+      tl.fromTo($("empathy"), { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 0.65);
+
+      // ---- Scene 2 (1.4-3.6s): verbatim tag + per-line FAQ write-in ----
+      tl.fromTo($("verbatim"), { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.45, ease: "power2.out" }, 1.4);
+      tl.fromTo($("rule"), { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: "power2.out" }, 1.45);
+      tl.fromTo($("quote"), { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power1.out" }, 1.5);
+      var lines = [$("q"), $("l1"), $("l2"), $("l3")];
+      var starts = [1.6, 2.05, 2.45, 2.85];
+      lines.forEach(function (el, i) {
+        tl.fromTo(
+          el,
+          { opacity: 0, y: 16, clipPath: "inset(0% 100% 0% 0%)" },
+          { opacity: 1, y: 0, clipPath: "inset(0% 0% 0% 0%)", duration: 0.55, ease: "power2.out" },
+          starts[i]
+        );
+      });
+
+      // ---- Scene 3 (3.6-5.4s): sources panel slides out on the right ----
+      tl.fromTo(
+        $("sources"),
+        { opacity: 0, x: -70, clipPath: "inset(0% 100% 0% 0% round 14px)" },
+        { opacity: 1, x: 0, clipPath: "inset(0% 0% 0% 0% round 14px)", duration: 0.75, ease: "power3.out" },
+        3.6
+      );
+      tl.fromTo($("sources-title"), { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.45, ease: "power2.out" }, 3.95);
+      tl.fromTo($("cite-q"), { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 4.2);
+      tl.fromTo($("cite-s"), { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 4.5);
+
+      // ---- Scene 4 (5.4-8.0s): LLM toggle flips on (press-release, no overshoot), caption, guardrail ----
+      tl.fromTo($("toggle"), { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 5.4);
+      var PRESS_START = 5.78, PRESS_DUR = 0.14, RELEASE_START = PRESS_START + PRESS_DUR, RELEASE_DUR = 0.45;
+      tl.fromTo($("toggle"), { scale: 1 }, { scale: 0.94, duration: PRESS_DUR, ease: "power1.in", immediateRender: false }, PRESS_START);
+      tl.to($("toggle"), { scale: 1, duration: RELEASE_DUR, ease: "power3.out" }, RELEASE_START);
+      tl.fromTo($("knob"), { x: 0 }, { x: 44, duration: 0.35, ease: "power3.out", immediateRender: false }, RELEASE_START);
+      tl.fromTo($("switch-on"), { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out", immediateRender: false }, RELEASE_START);
+      tl.fromTo($("burst"), { scale: 1, opacity: 0 }, { scale: 3, opacity: 0.55, duration: 0.4, ease: "power2.out", immediateRender: false }, RELEASE_START);
+      tl.to($("burst"), { opacity: 0, duration: 0.45, ease: "power2.in" }, RELEASE_START + 0.4);
+      tl.fromTo($("state"), { color: "#6b6b6b" }, { color: "#9a9a9a", duration: 0.3, ease: "power2.out", immediateRender: false }, RELEASE_START);
+      tl.fromTo($("caption"), { opacity: 0, x: -16 }, { opacity: 1, x: 0, duration: 0.4, ease: "power2.out" }, 5.98);
+      tl.fromTo($("guard"), { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" }, 6.12);
+
+      // hold to 8.0s
+      tl.set({}, {}, 8);
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines["07-answer"] = tl;
+    })();
+  </script>
+</template>
