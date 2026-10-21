@@ -2,3 +2,4 @@
 .hyperframes/frame-packets/
 .hyperframes/artifacts/
 node_modules/
+renders/*.tmp

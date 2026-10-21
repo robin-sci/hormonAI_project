@@ -28,7 +28,7 @@ music: none
 - duration: 6s
 - poster: 5s
 - transition_in: cut
-- status: outline
+- status: animated
 - src: compositions/frames/01-hook.html
 - type: hook
 - persuasion: Stakes / consequence + before/after contrast
@@ -54,7 +54,7 @@ Scene 3 (3.6–6.0s): the struck chip dims to ~30%; "A medical chatbot must not.
 - duration: 7s
 - poster: 6s
 - transition_in: crossfade
-- status: outline
+- status: animated
 - src: compositions/frames/02-promise.html
 - type: product_intro
 - persuasion: Concretization (abstract safety → a finite stack of vetted cards)
@@ -81,7 +81,7 @@ Scene 4 (5.0–7.0s): held read — everything still.
 - duration: 8s
 - poster: 7s
 - transition_in: push-slide LEFT
-- status: outline
+- status: animated
 - src: compositions/frames/03-search.html
 - type: feature_showcase
 - persuasion: Signposting + progressive disclosure (one lane at a time)
@@ -107,7 +107,7 @@ Scene 3 (5.6–8.0s): a tag "each search returns its top 40" reveals at the lane
 - duration: 7s
 - poster: 6s
 - transition_in: push-slide LEFT
-- status: outline
+- status: animated
 - src: compositions/frames/04-merge.html
 - type: feature_showcase
 - persuasion: Demonstration (show the mechanism running) + causal chain
@@ -133,7 +133,7 @@ Scene 3 (4.6–7.0s): the line "Ranked high in several searches → rises to the
 - duration: 7s
 - poster: 6s
 - transition_in: push-slide LEFT
-- status: outline
+- status: animated
 - src: compositions/frames/05-rerank.html
 - type: feature_showcase
 - persuasion: Progressive disclosure + comparison
@@ -159,7 +159,7 @@ Scene 3 (4.8–7.0s): the cards re-order by bar length (one smooth vertical refl
 - duration: 10s
 - poster: 9s
 - transition_in: push-slide LEFT
-- status: outline
+- status: animated
 - src: compositions/frames/06-gate.html
 - type: benefit_highlight
 - persuasion: Frame-then-fill (state the three exits, then light each) + rule of three
@@ -186,7 +186,7 @@ Scene 4 (6.0–10.0s): exit 3 lights: "Nothing fits → decline", followed by th
 - duration: 8s
 - poster: 7s
 - transition_in: push-slide LEFT
-- status: outline
+- status: animated
 - src: compositions/frames/07-answer.html
 - type: social_proof
 - persuasion: Worked example with real content
@@ -213,7 +213,7 @@ Scene 4 (5.4–8.0s): beneath the bubble a pill toggle "Local LLM rewording" sho
 - duration: 6s
 - poster: 5s
 - transition_in: crossfade
-- status: outline
+- status: animated
 - src: compositions/frames/08-takeaway.html
 - type: branding
 - persuasion: Distillation + callback (to the hook's "must not guess")

@@ -1,389 +1,429 @@
 <template>
-  <div
-    id="root"
-    data-composition-id="04-merge"
-    data-start="0"
-    data-duration="7"
-    data-width="1920"
-    data-height="1080"
-  >
-    <style>
-      @font-face {
-        font-family: "Inter";
-        font-weight: 400;
-        font-style: normal;
-        src: url("assets/fonts/inter-latin-400-normal.woff2") format("woff2");
-      }
-      @font-face {
-        font-family: "Inter";
-        font-weight: 500;
-        font-style: normal;
-        src: url("assets/fonts/inter-latin-500-normal.woff2") format("woff2");
-      }
-      @font-face {
-        font-family: "Space Grotesk";
-        font-weight: 500;
-        font-style: normal;
-        src: url("assets/fonts/space-grotesk-latin-500-normal.woff2") format("woff2");
-      }
-      @font-face {
-        font-family: "Space Grotesk";
-        font-weight: 600;
-        font-style: normal;
-        src: url("assets/fonts/space-grotesk-latin-600-normal.woff2") format("woff2");
-      }
-      @font-face {
-        font-family: "Space Grotesk";
-        font-weight: 700;
-        font-style: normal;
-        src: url("assets/fonts/space-grotesk-latin-700-normal.woff2") format("woff2");
-      }
+  <style>
+    @font-face {
+      font-family: "Inter";
+      src: url("assets/fonts/inter-latin-500-normal.woff2") format("woff2");
+      font-weight: 500;
+      font-style: normal;
+      font-display: block;
+    }
+    @font-face {
+      font-family: "Space Grotesk";
+      src: url("assets/fonts/space-grotesk-latin-500-normal.woff2") format("woff2");
+      font-weight: 500;
+      font-style: normal;
+      font-display: block;
+    }
+    @font-face {
+      font-family: "Space Grotesk";
+      src: url("assets/fonts/space-grotesk-latin-600-normal.woff2") format("woff2");
+      font-weight: 600;
+      font-style: normal;
+      font-display: block;
+    }
+    @font-face {
+      font-family: "Space Grotesk";
+      src: url("assets/fonts/space-grotesk-latin-700-normal.woff2") format("woff2");
+      font-weight: 700;
+      font-style: normal;
+      font-display: block;
+    }
 
-      /* Frame root: sized + container via #root (never a class on the root). */
-      #root {
-        position: relative;
-        width: 1920px;
-        height: 1080px;
-        overflow: hidden;
-        container-type: size;
-        font-family: "Inter", sans-serif;
-        color: #111111;
-      }
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      font-family: "Inter", sans-serif;
+      color: #111111;
+    }
 
-      /* Full-bleed cream ground (its own clip layer, not on #root). */
-      .\30 4-merge-ground {
-        position: absolute;
-        inset: 0;
-        background: #fdfae7;
-      }
-      .\30 4-merge-stage {
-        position: absolute;
-        inset: 0;
-      }
+    .f04-merge-ground {
+      position: absolute;
+      inset: 0;
+      background: #fdfae7;
+      container-type: size;
+    }
+    .f04-merge-layer {
+      position: absolute;
+      inset: 0;
+    }
 
-      /* ---------- progress rail (shared by frames 03-07) ---------- */
-      .\30 4-merge-seg {
-        position: absolute;
-        top: 71px;
-        width: 194.5px;
-        height: 2px;
-        border-radius: 1px;
-        background: rgba(30, 43, 250, 0.2);
-        overflow: hidden;
-      }
-      .\30 4-merge-seg-fill {
-        position: absolute;
-        inset: 0;
-        background: #1e2bfa;
-        transform-origin: 0% 50%;
-      }
-      .\30 4-merge-pill {
-        position: absolute;
-        top: 50px;
-        width: 190px;
-        height: 44px;
-        border-radius: 100px;
-        border: 1.5px solid rgba(30, 43, 250, 0.2);
-        background: #fdfae7;
-        overflow: hidden;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-family: "Space Grotesk", sans-serif;
-        font-weight: 600;
-        font-size: 1cqw;
-        letter-spacing: 0.02em;
-        color: #6b6b6b;
-      }
-      .\30 4-merge-pill-fill {
-        position: absolute;
-        inset: 0;
-        background: #1e2bfa;
-        transform-origin: 0% 50%;
-      }
-      .\30 4-merge-pill-label {
-        position: relative;
-      }
+    /* ---- progress rail (shared by frames 03–07) ---- */
+    .f04-merge-rail-svg {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1920px;
+      height: 120px;
+      overflow: visible;
+    }
+    .f04-merge-rail-svg path {
+      fill: none;
+      stroke: rgba(30, 43, 250, 0.2);
+      stroke-width: 2;
+      stroke-linecap: round;
+    }
+    .f04-merge-pill {
+      position: absolute;
+      top: 40px;
+      width: 176px;
+      height: 44px;
+      margin-left: -88px;
+      border-radius: 100px;
+      border: 1.5px solid rgba(30, 43, 250, 0.2);
+      background: #fdfae7;
+      color: #6b6b6b;
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 500;
+      font-size: 18px;
+      letter-spacing: 0.02em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      white-space: nowrap;
+    }
 
-      /* ---------- header copy ---------- */
-      .\30 4-merge-title {
-        position: absolute;
-        left: 96px;
-        top: 128px;
-        font-family: "Space Grotesk", sans-serif;
-        font-weight: 600;
-        font-size: 2.6cqw;
-        line-height: 1.1;
-        letter-spacing: -0.02em;
-        color: #111111;
-      }
-      .\30 4-merge-line {
-        position: absolute;
-        left: 96px;
-        top: 206px;
-        font-family: "Inter", sans-serif;
-        font-weight: 500;
-        font-size: 1.5cqw;
-        line-height: 1.3;
-        color: #111111;
-        white-space: nowrap;
-      }
-      .\30 4-merge-word {
-        display: inline-block;
-        margin-right: 0.28em;
-      }
-      .\30 4-merge-arrow {
-        display: inline-block;
-        width: 1.05em;
-        height: 0.62em;
-        margin-right: 0.28em;
-        vertical-align: 0.06em;
-      }
-      .\30 4-merge-formula {
-        position: absolute;
-        left: 96px;
-        top: 268px;
-        height: 54px;
-        padding: 0 26px;
-        border-radius: 100px;
-        background: rgba(30, 43, 250, 0.08);
-        border: 1.5px solid rgba(30, 43, 250, 0.2);
-        display: flex;
-        align-items: center;
-        font-family: "Space Grotesk", sans-serif;
-        font-weight: 500;
-        font-size: 1.4cqw;
-        color: #1e2bfa;
-        white-space: pre;
-      }
-      .\30 4-merge-ch {
-        display: inline-block;
-      }
-      .\30 4-merge-sigma {
-        display: inline-block;
-        width: 0.62em;
-        height: 0.74em;
-        vertical-align: -0.02em;
-      }
+    /* ---- step title, line, formula ---- */
+    .f04-merge-title {
+      position: absolute;
+      left: 96px;
+      top: 124px;
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 600;
+      font-size: 50px;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      color: #111111;
+      white-space: nowrap;
+    }
+    .f04-merge-line {
+      position: absolute;
+      left: 96px;
+      top: 196px;
+      font-family: "Inter", sans-serif;
+      font-weight: 500;
+      font-size: 29px;
+      line-height: 1.3;
+      color: #111111;
+      white-space: nowrap;
+    }
+    .f04-merge-word {
+      display: inline-block;
+      margin-right: 0.28em;
+    }
+    .f04-merge-arrow {
+      display: inline-block;
+      width: 1.05em;
+      height: 0.62em;
+      margin-right: 0.28em;
+      vertical-align: 0.06em;
+    }
+    .f04-merge-formula {
+      position: absolute;
+      left: 96px;
+      top: 262px;
+      height: 54px;
+      padding: 0 26px;
+      border-radius: 100px;
+      background: rgba(30, 43, 250, 0.08);
+      border: 1.5px solid rgba(30, 43, 250, 0.2);
+      display: flex;
+      align-items: center;
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 500;
+      font-size: 27px;
+      color: #1e2bfa;
+      white-space: pre;
+    }
+    .f04-merge-ch {
+      display: inline-block;
+    }
+    .f04-merge-sigma {
+      display: inline-block;
+      width: 0.62em;
+      height: 0.74em;
+      vertical-align: -0.02em;
+    }
 
-      /* ---------- the four lanes (dimmed, left half) ---------- */
-      .\30 4-merge-lanes {
-        position: absolute;
-        inset: 0;
-      }
-      .\30 4-merge-lane-label {
-        position: absolute;
-        left: 96px;
-        font-family: "Space Grotesk", sans-serif;
-        font-weight: 600;
-        font-size: 1cqw;
-        letter-spacing: 0.02em;
-        color: #6b6b6b;
-      }
-      .\30 4-merge-chip {
-        position: absolute;
-        width: 146px;
-        height: 50px;
-        border-radius: 10px;
-        background: rgba(30, 43, 250, 0.04);
-        border: 1.5px solid rgba(30, 43, 250, 0.2);
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 0 14px;
-        font-family: "Space Grotesk", sans-serif;
-        font-weight: 600;
-        font-size: 17px;
-        color: #9a9a9a;
-      }
-      .\30 4-merge-chip-bar {
-        flex: 1;
-        height: 8px;
-        border-radius: 6px;
-        background: rgba(30, 43, 250, 0.15);
-      }
-      .\30 4-merge-chip.is-hit {
-        background: rgba(30, 43, 250, 0.15);
-        color: #1e2bfa;
-      }
-      .\30 4-merge-chip.is-hit .\30 4-merge-chip-bar {
-        background: rgba(30, 43, 250, 0.55);
-      }
+    /* ---- stage: question card + lanes (as left by frame 03) ---- */
+    .f04-merge-conn-svg {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1920px;
+      height: 1080px;
+      overflow: visible;
+    }
+    .f04-merge-conn-svg path {
+      fill: none;
+      stroke: #1e2bfa;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      opacity: 0.55;
+    }
+    .f04-merge-qcard {
+      position: absolute;
+      left: 96px;
+      top: 478px;
+      width: 444px;
+      height: 184px;
+      padding: 0 32px;
+      border-radius: 14px;
+      background: rgba(30, 43, 250, 0.04);
+      border: 1.5px solid rgba(30, 43, 250, 0.2);
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .f04-merge-qmark {
+      flex: 0 0 auto;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #1e2bfa;
+      color: #fdfae7;
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 600;
+      font-size: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .f04-merge-qtext {
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 500;
+      font-size: 32px;
+      line-height: 1.3;
+      letter-spacing: -0.02em;
+      color: #111111;
+    }
 
-      /* glowing copies of the matching chip (fly right + merge) */
-      .\30 4-merge-halo {
-        position: absolute;
-        width: 146px;
-        height: 50px;
-        border-radius: 12px;
-        background: rgba(30, 43, 250, 0.15);
-      }
-      .\30 4-merge-ghost {
-        position: absolute;
-        width: 146px;
-        height: 50px;
-        border-radius: 10px;
-        background: #1e2bfa;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 0 14px;
-        font-family: "Space Grotesk", sans-serif;
-        font-weight: 600;
-        font-size: 17px;
-        color: #fdfae7;
-        z-index: 3;
-      }
-      .\30 4-merge-ghost .\30 4-merge-chip-bar {
-        background: rgba(253, 250, 231, 0.55);
-      }
+    .f04-merge-lanes {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+    }
+    .f04-merge-lane {
+      position: absolute;
+      left: 660px;
+      width: 1164px;
+      height: 126px;
+      padding: 14px 20px 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transform-origin: 0% 50%;
+    }
+    .f04-merge-lane-bg {
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      background: rgba(30, 43, 250, 0.04);
+      border: 1.5px solid rgba(30, 43, 250, 0.2);
+    }
+    .f04-merge-lane-label {
+      position: relative;
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 600;
+      font-size: 26px;
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+      color: #111111;
+      white-space: nowrap;
+    }
+    .f04-merge-lrow {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      height: 52px;
+    }
+    .f04-merge-chip {
+      flex: 0 0 auto;
+      height: 52px;
+      border-radius: 100px;
+      background: #fdfae7;
+      border: 1.5px solid rgba(30, 43, 250, 0.2);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 16px;
+    }
+    .f04-merge-chip i {
+      font-style: normal;
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 600;
+      font-size: 19px;
+      color: #1e2bfa;
+    }
+    .f04-merge-skel {
+      width: 96px;
+    }
+    .f04-merge-skel span {
+      display: block;
+      flex: 1 1 auto;
+      height: 8px;
+      border-radius: 6px;
+      background: rgba(30, 43, 250, 0.15);
+    }
+    .f04-merge-hit {
+      position: relative;
+      background: rgba(30, 43, 250, 0.15);
+      transform-origin: 50% 50%;
+    }
+    .f04-merge-hit span {
+      font-family: "Inter", sans-serif;
+      font-weight: 500;
+      font-size: 21px;
+      color: #111111;
+      white-space: nowrap;
+    }
+    .f04-merge-end {
+      margin-left: auto;
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 500;
+      font-size: 20px;
+      color: #9a9a9a;
+      white-space: nowrap;
+    }
 
-      /* ---------- merged ranked column (hero, right) ---------- */
-      .\30 4-merge-col {
-        position: absolute;
-        inset: 0;
-        transform-origin: 1452px 634px;
-      }
-      .\30 4-merge-slot {
-        position: absolute;
-        left: 1080px;
-        width: 744px;
-        border-radius: 12px;
-        border: 1.5px solid rgba(30, 43, 250, 0.12);
-        display: flex;
-        align-items: center;
-        padding: 0 28px;
-        font-family: "Space Grotesk", sans-serif;
-        font-weight: 700;
-        font-size: 1.5cqw;
-        color: rgba(30, 43, 250, 0.22);
-      }
-      .\30 4-merge-out {
-        position: absolute;
-        left: 1080px;
-        top: 400px;
-        width: 744px;
-        height: 116px;
-        border-radius: 14px;
-        background: rgba(30, 43, 250, 0.08);
-        border: 1.5px solid rgba(30, 43, 250, 0.2);
-        transform-origin: 50% 50%;
-        z-index: 2;
-      }
-      .\30 4-merge-top {
-        position: absolute;
-        left: 1080px;
-        top: 400px;
-        width: 744px;
-        height: 116px;
-        border-radius: 14px;
-        background: #f6f3ec;
-        border: 1.5px solid rgba(30, 43, 250, 0.2);
-        overflow: hidden;
-        display: flex;
-        align-items: center;
-        gap: 28px;
-        padding: 0 32px 0 36px;
-        transform-origin: 50% 50%;
-        z-index: 4;
-      }
-      .\30 4-merge-top-rule {
-        position: absolute;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        width: 4px;
-        background: #1e2bfa;
-      }
-      .\30 4-merge-top-rank {
-        font-family: "Space Grotesk", sans-serif;
-        font-weight: 700;
-        font-size: 3cqw;
-        line-height: 1;
-        color: #1e2bfa;
-        flex: none;
-      }
-      .\30 4-merge-top-q {
-        font-family: "Space Grotesk", sans-serif;
-        font-weight: 500;
-        font-size: 1.5cqw;
-        line-height: 1.25;
-        letter-spacing: -0.01em;
-        color: #111111;
-      }
-      .\30 4-merge-row {
-        position: absolute;
-        left: 1080px;
-        width: 744px;
-        height: 74px;
-        border-radius: 12px;
-        background: #fbf8e6;
-        border: 1.5px solid rgba(30, 43, 250, 0.2);
-        display: flex;
-        align-items: center;
-        gap: 28px;
-        padding: 0 32px 0 36px;
-        z-index: 1;
-      }
-      .\30 4-merge-row-rank {
-        font-family: "Space Grotesk", sans-serif;
-        font-weight: 700;
-        font-size: 1.5cqw;
-        color: #1e2bfa;
-        width: 58px;
-        flex: none;
-      }
-      .\30 4-merge-row-bar {
-        height: 12px;
-        border-radius: 6px;
-        background: rgba(30, 43, 250, 0.15);
-      }
-    </style>
+    /* ---- merged ranked column (hero, right) ---- */
+    .f04-merge-colA,
+    .f04-merge-colB {
+      position: absolute;
+      inset: 0;
+      transform-origin: 1552px 540px;
+    }
+    .f04-merge-colA {
+      z-index: 1;
+    }
+    .f04-merge-colB {
+      z-index: 3;
+    }
+    .f04-merge-slot {
+      position: absolute;
+      left: 1280px;
+      width: 544px;
+      border-radius: 12px;
+      border: 1.5px solid rgba(30, 43, 250, 0.12);
+      display: flex;
+      align-items: center;
+      padding: 0 28px;
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 700;
+      font-size: 28px;
+      color: rgba(30, 43, 250, 0.22);
+    }
+    .f04-merge-out {
+      position: absolute;
+      left: 1280px;
+      top: 270px;
+      width: 544px;
+      height: 140px;
+      border-radius: 14px;
+      background: rgba(30, 43, 250, 0.08);
+      border: 1.5px solid rgba(30, 43, 250, 0.2);
+      transform-origin: 50% 50%;
+    }
+    .f04-merge-top {
+      position: absolute;
+      left: 1280px;
+      top: 270px;
+      width: 544px;
+      height: 140px;
+      border-radius: 14px;
+      background: #f3f0e6;
+      border: 1.5px solid rgba(30, 43, 250, 0.2);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      padding: 0 28px 0 34px;
+      transform-origin: 50% 50%;
+    }
+    .f04-merge-top-rule {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: #1e2bfa;
+    }
+    .f04-merge-top-rank {
+      flex: none;
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 700;
+      font-size: 46px;
+      line-height: 1;
+      color: #1e2bfa;
+    }
+    .f04-merge-top-q {
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 500;
+      font-size: 27px;
+      line-height: 1.25;
+      letter-spacing: -0.01em;
+      color: #111111;
+    }
+    .f04-merge-row {
+      position: absolute;
+      left: 1280px;
+      width: 544px;
+      height: 84px;
+      border-radius: 12px;
+      background: #fbf8e6;
+      border: 1.5px solid rgba(30, 43, 250, 0.2);
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      padding: 0 28px 0 34px;
+    }
+    .f04-merge-row-rank {
+      flex: none;
+      width: 52px;
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 700;
+      font-size: 28px;
+      color: #1e2bfa;
+    }
+    .f04-merge-row-bar {
+      height: 12px;
+      border-radius: 6px;
+      background: rgba(30, 43, 250, 0.15);
+    }
+  </style>
 
-    <!-- full-bleed ground -->
+  <div id="root" data-composition-id="04-merge" data-width="1920" data-height="1080" data-duration="7.5">
     <div
-      class="clip 04-merge-ground"
+      id="f04-merge-ground"
+      class="clip f04-merge-ground"
       data-start="0"
-      data-duration="7"
+      data-duration="7.5"
       data-track-index="0"
     ></div>
 
-    <div class="clip 04-merge-stage" data-start="0" data-duration="7" data-track-index="1">
+    <div id="f04-merge-layer" class="clip f04-merge-layer" data-start="0" data-duration="7.5" data-track-index="1">
       <!-- progress rail -->
-      <div class="04-merge-seg" style="left: 286px">
-        <div id="04-merge-seg1" class="04-merge-seg-fill"></div>
-      </div>
-      <div class="04-merge-seg" style="left: 670.5px"></div>
-      <div class="04-merge-seg" style="left: 1055px"></div>
-      <div class="04-merge-seg" style="left: 1439.5px"></div>
-
-      <div id="04-merge-pill1" class="04-merge-pill" style="left: 96px">
-        <div id="04-merge-pill1-fill" class="04-merge-pill-fill"></div>
-        <span id="04-merge-pill1-label" class="04-merge-pill-label">1 Search</span>
-      </div>
-      <div id="04-merge-pill2" class="04-merge-pill" style="left: 480.5px">
-        <div id="04-merge-pill2-fill" class="04-merge-pill-fill"></div>
-        <span id="04-merge-pill2-label" class="04-merge-pill-label">2 Merge</span>
-      </div>
-      <div class="04-merge-pill" style="left: 865px">
-        <span class="04-merge-pill-label">3 Rerank</span>
-      </div>
-      <div class="04-merge-pill" style="left: 1249.5px">
-        <span class="04-merge-pill-label">4 Check</span>
-      </div>
-      <div class="04-merge-pill" style="left: 1634px">
-        <span class="04-merge-pill-label">5 Answer</span>
-      </div>
+      <svg class="f04-merge-rail-svg" viewBox="0 0 1920 120" aria-hidden="true">
+        <path d="M 184 62 L 1736 62" />
+      </svg>
+      <div class="f04-merge-pill" id="f04-merge-pill-1" style="left: 184px">1 Search</div>
+      <div class="f04-merge-pill" id="f04-merge-pill-2" style="left: 572px">2 Merge</div>
+      <div class="f04-merge-pill" style="left: 960px">3 Rerank</div>
+      <div class="f04-merge-pill" style="left: 1348px">4 Check</div>
+      <div class="f04-merge-pill" style="left: 1736px">5 Answer</div>
 
       <!-- step title -->
-      <div id="04-merge-title" class="04-merge-title">2 · Merge</div>
+      <div class="f04-merge-title" id="f04-merge-title">2 · Merge</div>
 
       <!-- explanatory line (per-word reveal) -->
-      <div class="04-merge-line" aria-label="Ranked high in several searches → rises to the top">
-        <span class="04-merge-word">Ranked</span><span class="04-merge-word">high</span
-        ><span class="04-merge-word">in</span><span class="04-merge-word">several</span
-        ><span class="04-merge-word">searches</span
-        ><svg class="04-merge-word 04-merge-arrow" viewBox="0 0 34 20" aria-hidden="true">
+      <div class="f04-merge-line" aria-label="Ranked high in several searches → rises to the top">
+        <span class="f04-merge-word">Ranked</span><span class="f04-merge-word">high</span
+        ><span class="f04-merge-word">in</span><span class="f04-merge-word">several</span
+        ><span class="f04-merge-word">searches</span
+        ><svg class="f04-merge-word f04-merge-arrow" viewBox="0 0 34 20" aria-hidden="true">
           <path
             d="M2 10 H30 M22 2.5 L30.5 10 L22 17.5"
             fill="none"
@@ -392,17 +432,17 @@
             stroke-linecap="round"
             stroke-linejoin="round"
           /></svg
-        ><span class="04-merge-word">rises</span><span class="04-merge-word">to</span
-        ><span class="04-merge-word">the</span><span class="04-merge-word">top</span>
+        ><span class="f04-merge-word">rises</span><span class="f04-merge-word">to</span
+        ><span class="f04-merge-word">the</span><span class="f04-merge-word">top</span>
       </div>
 
       <!-- formula tag (types in) -->
-      <div id="04-merge-formula" class="04-merge-formula" aria-label="score = Σ 1 / (60 + rank)">
-        <span class="04-merge-ch">s</span><span class="04-merge-ch">c</span
-        ><span class="04-merge-ch">o</span><span class="04-merge-ch">r</span
-        ><span class="04-merge-ch">e</span><span class="04-merge-ch"> </span
-        ><span class="04-merge-ch">=</span><span class="04-merge-ch"> </span
-        ><svg class="04-merge-ch 04-merge-sigma" viewBox="0 0 16 20" aria-hidden="true">
+      <div class="f04-merge-formula" id="f04-merge-formula" aria-label="score = Σ 1 / (60 + rank)">
+        <span class="f04-merge-ch">s</span><span class="f04-merge-ch">c</span
+        ><span class="f04-merge-ch">o</span><span class="f04-merge-ch">r</span
+        ><span class="f04-merge-ch">e</span><span class="f04-merge-ch"> </span
+        ><span class="f04-merge-ch">=</span><span class="f04-merge-ch"> </span
+        ><svg class="f04-merge-ch f04-merge-sigma" viewBox="0 0 16 20" aria-hidden="true">
           <path
             d="M14 2.5 H2.5 L9.2 10 L2.5 17.5 H14"
             fill="none"
@@ -411,234 +451,301 @@
             stroke-linecap="round"
             stroke-linejoin="round"
           /></svg
-        ><span class="04-merge-ch"> </span><span class="04-merge-ch">1</span
-        ><span class="04-merge-ch"> </span><span class="04-merge-ch">/</span
-        ><span class="04-merge-ch"> </span><span class="04-merge-ch">(</span
-        ><span class="04-merge-ch">6</span><span class="04-merge-ch">0</span
-        ><span class="04-merge-ch"> </span><span class="04-merge-ch">+</span
-        ><span class="04-merge-ch"> </span><span class="04-merge-ch">r</span
-        ><span class="04-merge-ch">a</span><span class="04-merge-ch">n</span
-        ><span class="04-merge-ch">k</span><span class="04-merge-ch">)</span>
+        ><span class="f04-merge-ch"> </span><span class="f04-merge-ch">1</span
+        ><span class="f04-merge-ch"> </span><span class="f04-merge-ch">/</span
+        ><span class="f04-merge-ch"> </span><span class="f04-merge-ch">(</span
+        ><span class="f04-merge-ch">6</span><span class="f04-merge-ch">0</span
+        ><span class="f04-merge-ch"> </span><span class="f04-merge-ch">+</span
+        ><span class="f04-merge-ch"> </span><span class="f04-merge-ch">r</span
+        ><span class="f04-merge-ch">a</span><span class="f04-merge-ch">n</span
+        ><span class="f04-merge-ch">k</span><span class="f04-merge-ch">)</span>
       </div>
 
-      <!-- four lanes from frame 3 (dimmed to ~40%) -->
-      <div id="04-merge-lanes" class="04-merge-lanes">
-        <div class="04-merge-lane-label" style="top: 392px">Keywords (BM25)</div>
-        <div class="04-merge-chip is-hit" style="left: 96px; top: 424px">#1<span class="04-merge-chip-bar"></span></div>
-        <div class="04-merge-chip" style="left: 254px; top: 424px">#2<span class="04-merge-chip-bar"></span></div>
-        <div class="04-merge-chip" style="left: 412px; top: 424px">#3<span class="04-merge-chip-bar"></span></div>
-        <div class="04-merge-chip" style="left: 570px; top: 424px">#4<span class="04-merge-chip-bar"></span></div>
-        <div class="04-merge-chip" style="left: 728px; top: 424px">#5<span class="04-merge-chip-bar"></span></div>
-
-        <div class="04-merge-lane-label" style="top: 512px">Meaning of the question</div>
-        <div class="04-merge-chip" style="left: 96px; top: 544px">#1<span class="04-merge-chip-bar"></span></div>
-        <div class="04-merge-chip is-hit" style="left: 254px; top: 544px">#2<span class="04-merge-chip-bar"></span></div>
-        <div class="04-merge-chip" style="left: 412px; top: 544px">#3<span class="04-merge-chip-bar"></span></div>
-        <div class="04-merge-chip" style="left: 570px; top: 544px">#4<span class="04-merge-chip-bar"></span></div>
-        <div class="04-merge-chip" style="left: 728px; top: 544px">#5<span class="04-merge-chip-bar"></span></div>
-
-        <div class="04-merge-lane-label" style="top: 632px">Question + answer</div>
-        <div class="04-merge-chip is-hit" style="left: 96px; top: 664px">#1<span class="04-merge-chip-bar"></span></div>
-        <div class="04-merge-chip" style="left: 254px; top: 664px">#2<span class="04-merge-chip-bar"></span></div>
-        <div class="04-merge-chip" style="left: 412px; top: 664px">#3<span class="04-merge-chip-bar"></span></div>
-        <div class="04-merge-chip" style="left: 570px; top: 664px">#4<span class="04-merge-chip-bar"></span></div>
-        <div class="04-merge-chip" style="left: 728px; top: 664px">#5<span class="04-merge-chip-bar"></span></div>
-
-        <div class="04-merge-lane-label" style="top: 752px">Rewordings</div>
-        <div class="04-merge-chip" style="left: 96px; top: 784px">#1<span class="04-merge-chip-bar"></span></div>
-        <div class="04-merge-chip" style="left: 254px; top: 784px">#2<span class="04-merge-chip-bar"></span></div>
-        <div class="04-merge-chip is-hit" style="left: 412px; top: 784px">#3<span class="04-merge-chip-bar"></span></div>
-        <div class="04-merge-chip" style="left: 570px; top: 784px">#4<span class="04-merge-chip-bar"></span></div>
-        <div class="04-merge-chip" style="left: 728px; top: 784px">#5<span class="04-merge-chip-bar"></span></div>
+      <!-- question card + connectors (pinned, as in frame 03) -->
+      <svg class="f04-merge-conn-svg" id="f04-merge-conns" viewBox="0 0 1920 1080" aria-hidden="true">
+        <path d="M 540 570 C 610 570, 590 333, 660 333" />
+        <path d="M 540 570 C 610 570, 590 491, 660 491" />
+        <path d="M 540 570 C 610 570, 590 649, 660 649" />
+        <path d="M 540 570 C 610 570, 590 807, 660 807" />
+      </svg>
+      <div class="f04-merge-qcard">
+        <div class="f04-merge-qmark">?</div>
+        <div class="f04-merge-qtext">How long will I be on tamoxifen?</div>
       </div>
 
-      <!-- merged ranked column -->
-      <div id="04-merge-col" class="04-merge-col">
-        <div class="04-merge-slot" style="top: 400px; height: 116px">#1</div>
-        <div class="04-merge-slot" style="top: 530px; height: 74px">#2</div>
-        <div class="04-merge-slot" style="top: 618px; height: 74px">#3</div>
-        <div class="04-merge-slot" style="top: 706px; height: 74px">#4</div>
-        <div class="04-merge-slot" style="top: 794px; height: 74px">#5</div>
+      <!-- merged column, back layer: empty slots + the bundle the copies land in -->
+      <div class="f04-merge-colA" id="f04-merge-colA">
+        <div class="f04-merge-slot" style="top: 270px; height: 140px">#1</div>
+        <div class="f04-merge-slot" style="top: 424px; height: 84px">#2</div>
+        <div class="f04-merge-slot" style="top: 522px; height: 84px">#3</div>
+        <div class="f04-merge-slot" style="top: 620px; height: 84px">#4</div>
+        <div class="f04-merge-slot" style="top: 718px; height: 84px">#5</div>
+        <div class="f04-merge-out" id="f04-merge-out"></div>
+      </div>
 
-        <!-- outgoing: the bundle the four copies land in -->
-        <div id="04-merge-out" class="04-merge-out"></div>
-
-        <!-- incoming: ONE merged chip at #1 -->
-        <div id="04-merge-top" class="04-merge-top">
-          <div class="04-merge-top-rule"></div>
-          <div class="04-merge-top-rank">#1</div>
-          <div id="04-merge-top-q" class="04-merge-top-q">How long do I need to take hormone therapy?</div>
+      <!-- the four lanes from frame 3 -->
+      <div class="f04-merge-lanes" id="f04-merge-lanes">
+        <div class="f04-merge-lane" style="top: 270px" data-hit="0">
+          <div class="f04-merge-lane-bg"></div>
+          <div class="f04-merge-lane-label">Keywords (BM25)</div>
+          <div class="f04-merge-lrow">
+            <div class="f04-merge-chip f04-merge-hit"><i>#1</i><span>How long do I need to take hormone therapy?</span></div>
+            <div class="f04-merge-chip f04-merge-skel"><i>#2</i><span></span></div>
+            <div class="f04-merge-chip f04-merge-skel"><i>#3</i><span></span></div>
+            <div class="f04-merge-chip f04-merge-skel"><i>#4</i><span></span></div>
+            <div class="f04-merge-chip f04-merge-skel"><i>#5</i><span></span></div>
+            <div class="f04-merge-end">… top 40</div>
+          </div>
         </div>
 
-        <div class="04-merge-row" style="top: 530px">
-          <span class="04-merge-row-rank">#2</span><span class="04-merge-row-bar" style="width: 62%"></span>
+        <div class="f04-merge-lane" style="top: 428px" data-hit="1">
+          <div class="f04-merge-lane-bg"></div>
+          <div class="f04-merge-lane-label">Meaning of the question</div>
+          <div class="f04-merge-lrow">
+            <div class="f04-merge-chip f04-merge-skel"><i>#1</i><span></span></div>
+            <div class="f04-merge-chip f04-merge-hit"><i>#2</i><span>How long do I need to take hormone therapy?</span></div>
+            <div class="f04-merge-chip f04-merge-skel"><i>#3</i><span></span></div>
+            <div class="f04-merge-chip f04-merge-skel"><i>#4</i><span></span></div>
+            <div class="f04-merge-chip f04-merge-skel"><i>#5</i><span></span></div>
+            <div class="f04-merge-end">… top 40</div>
+          </div>
         </div>
-        <div class="04-merge-row" style="top: 618px">
-          <span class="04-merge-row-rank">#3</span><span class="04-merge-row-bar" style="width: 48%"></span>
+
+        <div class="f04-merge-lane" style="top: 586px" data-hit="0">
+          <div class="f04-merge-lane-bg"></div>
+          <div class="f04-merge-lane-label">Question + answer</div>
+          <div class="f04-merge-lrow">
+            <div class="f04-merge-chip f04-merge-hit"><i>#1</i><span>How long do I need to take hormone therapy?</span></div>
+            <div class="f04-merge-chip f04-merge-skel"><i>#2</i><span></span></div>
+            <div class="f04-merge-chip f04-merge-skel"><i>#3</i><span></span></div>
+            <div class="f04-merge-chip f04-merge-skel"><i>#4</i><span></span></div>
+            <div class="f04-merge-chip f04-merge-skel"><i>#5</i><span></span></div>
+            <div class="f04-merge-end">… top 40</div>
+          </div>
         </div>
-        <div class="04-merge-row" style="top: 706px">
-          <span class="04-merge-row-rank">#4</span><span class="04-merge-row-bar" style="width: 55%"></span>
-        </div>
-        <div class="04-merge-row" style="top: 794px">
-          <span class="04-merge-row-rank">#5</span><span class="04-merge-row-bar" style="width: 40%"></span>
+
+        <div class="f04-merge-lane" style="top: 744px" data-hit="2">
+          <div class="f04-merge-lane-bg"></div>
+          <div class="f04-merge-lane-label">Rewordings</div>
+          <div class="f04-merge-lrow">
+            <div class="f04-merge-chip f04-merge-skel"><i>#1</i><span></span></div>
+            <div class="f04-merge-chip f04-merge-skel"><i>#2</i><span></span></div>
+            <div class="f04-merge-chip f04-merge-hit"><i>#3</i><span>How long do I need to take hormone therapy?</span></div>
+            <div class="f04-merge-chip f04-merge-skel"><i>#4</i><span></span></div>
+            <div class="f04-merge-chip f04-merge-skel"><i>#5</i><span></span></div>
+            <div class="f04-merge-end">… top 40</div>
+          </div>
         </div>
       </div>
 
-      <!-- glow halos + glowing copies of the matching chip (one per lane) -->
-      <div class="04-merge-halo" style="left: 96px; top: 424px"></div>
-      <div class="04-merge-halo" style="left: 254px; top: 544px"></div>
-      <div class="04-merge-halo" style="left: 96px; top: 664px"></div>
-      <div class="04-merge-halo" style="left: 412px; top: 784px"></div>
-      <div class="04-merge-ghost" style="left: 96px; top: 424px">#1<span class="04-merge-chip-bar"></span></div>
-      <div class="04-merge-ghost" style="left: 254px; top: 544px">#2<span class="04-merge-chip-bar"></span></div>
-      <div class="04-merge-ghost" style="left: 96px; top: 664px">#1<span class="04-merge-chip-bar"></span></div>
-      <div class="04-merge-ghost" style="left: 412px; top: 784px">#3<span class="04-merge-chip-bar"></span></div>
+      <!-- merged column, front layer: ONE merged chip at #1, then #2–#5 -->
+      <div class="f04-merge-colB" id="f04-merge-colB">
+        <div class="f04-merge-top" id="f04-merge-top">
+          <div class="f04-merge-top-rule"></div>
+          <div class="f04-merge-top-rank">#1</div>
+          <div class="f04-merge-top-q" id="f04-merge-top-q">How long do I need to take hormone therapy?</div>
+        </div>
+        <div class="f04-merge-row" style="top: 424px">
+          <span class="f04-merge-row-rank">#2</span><span class="f04-merge-row-bar" style="width: 62%"></span>
+        </div>
+        <div class="f04-merge-row" style="top: 522px">
+          <span class="f04-merge-row-rank">#3</span><span class="f04-merge-row-bar" style="width: 48%"></span>
+        </div>
+        <div class="f04-merge-row" style="top: 620px">
+          <span class="f04-merge-row-rank">#4</span><span class="f04-merge-row-bar" style="width: 55%"></span>
+        </div>
+        <div class="f04-merge-row" style="top: 718px">
+          <span class="f04-merge-row-rank">#5</span><span class="f04-merge-row-bar" style="width: 40%"></span>
+        </div>
+      </div>
     </div>
-
-    <script>
-      (function () {
-        var FID = "04-merge";
-        var byId = function (s) {
-          return document.getElementById(FID + "-" + s);
-        };
-        var all = function (s) {
-          return Array.prototype.slice.call(
-            document.querySelectorAll('[class~="' + FID + "-" + s + '"]'),
-          );
-        };
-
-        var tl = gsap.timeline({ paused: true });
-
-        /* ---------- Scene 1 (0.0-1.2s): rail advances, title, lanes dim ---------- */
-        // "1 Search" active -> done outline
-        tl.fromTo(byId("pill1-fill"), { scaleX: 1 }, { scaleX: 0, duration: 0.35, ease: "power2.in" }, 0.25);
-        tl.fromTo(
-          byId("pill1"),
-          { backgroundColor: "#fdfae7" },
-          { backgroundColor: "rgba(30,43,250,0.08)", duration: 0.35, ease: "power1.out" },
-          0.35,
-        );
-        tl.fromTo(byId("pill1-label"), { color: "#fdfae7" }, { color: "#1e2bfa", duration: 0.3, ease: "none" }, 0.3);
-        // connector Search -> Merge fills, then "2 Merge" fills cobalt
-        tl.fromTo(byId("seg1"), { scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: "power2.inOut" }, 0.45);
-        tl.fromTo(byId("pill2-fill"), { scaleX: 0 }, { scaleX: 1, duration: 0.4, ease: "power3.out" }, 0.75);
-        tl.fromTo(byId("pill2-label"), { color: "#6b6b6b" }, { color: "#fdfae7", duration: 0.25, ease: "none" }, 0.8);
-
-        // step title
-        tl.fromTo(
-          byId("title"),
-          { opacity: 0, y: 24 },
-          { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" },
-          0.15,
-        );
-
-        // lanes already in place -> dim to ~40%
-        tl.fromTo(byId("lanes"), { opacity: 1 }, { opacity: 0.4, duration: 0.8, ease: "power2.inOut" }, 0.2);
-
-        // empty merged column establishes (hero region visible early)
-        tl.fromTo(
-          all("slot"),
-          { opacity: 0, x: 24 },
-          { opacity: 1, x: 0, duration: 0.5, ease: "power3.out", stagger: 0.07 },
-          0.3,
-        );
-
-        /* ---------- Scene 2 (1.2-4.6s): matching chips glow, fly, merge ---------- */
-        var ghosts = all("ghost");
-        var halos = all("halo");
-        // glow in each lane where the hit appears
-        tl.fromTo(
-          ghosts,
-          { opacity: 0, scale: 0.92 },
-          { opacity: 1, scale: 1, duration: 0.35, ease: "power2.out", stagger: 0.12 },
-          1.2,
-        );
-        tl.fromTo(
-          halos,
-          { opacity: 0.9, scale: 1 },
-          { opacity: 0, scale: 1.45, duration: 0.8, ease: "power2.out", stagger: 0.12 },
-          1.25,
-        );
-
-        // all copies fly right into the #1 slot (landing side by side in the bundle)
-        var deltas = [
-          [1043, 9],
-          [1045, -111],
-          [1363, -231],
-          [1207, -351],
-        ];
-        tl.fromTo(
-          byId("out"),
-          { opacity: 0, scale: 0.96 },
-          { opacity: 1, scale: 1, duration: 0.45, ease: "power2.out" },
-          1.95,
-        );
-        ghosts.forEach(function (g, i) {
-          tl.fromTo(
-            g,
-            { x: 0, y: 0 },
-            { x: deltas[i][0], y: deltas[i][1], duration: 0.8, ease: "power3.inOut" },
-            1.95 + i * 0.1,
-          );
-        });
-
-        // scale-swap: the bundle (+ copies) shrinks out, ONE merged chip pops in
-        var TRIGGER = 3.05;
-        var EXIT_DUR = 0.35;
-        var OVERLAP = 0.15;
-        tl.to(
-          [byId("out")].concat(ghosts),
-          { scale: 0.7, opacity: 0, duration: EXIT_DUR, ease: "power2.in" },
-          TRIGGER,
-        );
-        tl.fromTo(
-          byId("top"),
-          { scale: 0.7, opacity: 0 },
-          { scale: 1, opacity: 1, duration: 0.6, ease: "back.out(1.8)" },
-          TRIGGER + EXIT_DUR - OVERLAP,
-        );
-        // inner content reveals after the incoming settles
-        tl.fromTo(
-          byId("top-q"),
-          { opacity: 0, y: 14 },
-          { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" },
-          TRIGGER + EXIT_DUR + 0.25,
-        );
-
-        // four more chips settle below as #2-#5 (staggered cascade)
-        tl.fromTo(
-          all("row"),
-          { opacity: 0, y: 18 },
-          { opacity: 1, y: 0, duration: 0.45, ease: "power3.out", stagger: 0.12 },
-          3.95,
-        );
-
-        /* ---------- Scene 3 (4.6-7.0s): line per-word, formula types in, hold ---------- */
-        tl.fromTo(
-          all("word"),
-          { opacity: 0, y: 14 },
-          { opacity: 1, y: 0, duration: 0.32, ease: "power3.out", stagger: 0.035 },
-          4.6,
-        );
-        tl.fromTo(
-          byId("formula"),
-          { opacity: 0, scale: 0.94 },
-          { opacity: 1, scale: 1, duration: 0.25, ease: "power2.out", transformOrigin: "0% 50%" },
-          4.95,
-        );
-        all("ch").forEach(function (c, i) {
-          tl.fromTo(c, { opacity: 0 }, { opacity: 1, duration: 0.01, ease: "none" }, 5.02 + i * 0.017);
-        });
-
-        // hold: alive but resting - slow push-in on the merged column
-        tl.fromTo(byId("col"), { scale: 1 }, { scale: 1.015, duration: 2.4, ease: "sine.inOut" }, 4.6);
-
-        // pad the timeline to the full frame length
-        tl.set({}, {}, 7);
-
-        window.__timelines = window.__timelines || {};
-        window.__timelines["04-merge"] = tl;
-      })();
-    </script>
   </div>
+
+  <script>
+    (function () {
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+
+      const byId = (id) => document.getElementById("f04-merge-" + id);
+      const cls = (scope, name) =>
+        Array.from(scope.querySelectorAll('[class~="f04-merge-' + name + '"]'));
+
+      const layer = byId("layer");
+      const lanesWrap = byId("lanes");
+      const lanes = cls(lanesWrap, "lane");
+      const hits = cls(lanesWrap, "hit");
+      const LANE_TOPS = [270, 428, 586, 744];
+      const LANE_SCALE = 0.48; // lanes slide together into the middle band
+      const LANE_LEFT = 660;
+
+      /* ---------- Scene 1 (0.0–1.2s): rail advances, title, lanes slide together + dim ---------- */
+      tl.fromTo(
+        byId("pill-1"),
+        { backgroundColor: "#1e2bfa", color: "#fdfae7", borderColor: "rgba(30,43,250,1)" },
+        {
+          backgroundColor: "#ebe9e8", // opaque 8% cobalt tint on cream (hides the rail line)
+          color: "#1e2bfa",
+          borderColor: "rgba(30,43,250,0.2)",
+          duration: 0.4,
+          ease: "power1.out",
+        },
+        0.2,
+      );
+      tl.fromTo(
+        byId("pill-2"),
+        { backgroundColor: "#fdfae7", color: "#6b6b6b", borderColor: "rgba(30,43,250,0.2)" },
+        { backgroundColor: "#1e2bfa", color: "#fdfae7", borderColor: "rgba(30,43,250,1)", duration: 0.4, ease: "power1.out" },
+        0.5,
+      );
+      tl.fromTo(
+        byId("title"),
+        { opacity: 0, y: 18 },
+        { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" },
+        0.2,
+      );
+
+      // lanes (already in place) slide together toward the middle band and dim to ~40%
+      tl.fromTo(
+        lanes,
+        { scale: 1 },
+        { scale: LANE_SCALE, duration: 0.9, ease: "power3.inOut", stagger: 0.04 },
+        0.15,
+      );
+      const dimmed = []
+        .concat(cls(lanesWrap, "lane-bg"))
+        .concat(cls(lanesWrap, "lane-label"))
+        .concat(cls(lanesWrap, "skel"))
+        .concat(cls(lanesWrap, "end"))
+        .concat(hits);
+      tl.fromTo(dimmed, { opacity: 1 }, { opacity: 0.4, duration: 0.8, ease: "power2.inOut" }, 0.2);
+      tl.fromTo(byId("conns"), { opacity: 1 }, { opacity: 0.4, duration: 0.8, ease: "power2.inOut" }, 0.2);
+
+      // empty merged column establishes on the right (hero region visible early)
+      tl.fromTo(
+        cls(layer, "slot"),
+        { opacity: 0, x: 24 },
+        { opacity: 1, x: 0, duration: 0.5, ease: "power3.out", stagger: 0.07 },
+        0.35,
+      );
+
+      /* ---------- Scene 2 (1.2–4.6s): matching chips glow, fly right, merge into ONE #1 ---------- */
+      // glow cobalt in each lane they appear in
+      tl.fromTo(
+        hits,
+        { backgroundColor: "rgba(30,43,250,0.15)", borderColor: "rgba(30,43,250,0.2)" },
+        {
+          opacity: 1,
+          backgroundColor: "#1e2bfa",
+          borderColor: "rgba(30,43,250,1)",
+          duration: 0.35,
+          ease: "power2.out",
+          stagger: 0.12,
+        },
+        1.2,
+      );
+      tl.fromTo(
+        hits.reduce((acc, h) => acc.concat(Array.from(h.querySelectorAll("i, span"))), []),
+        { color: (i) => (i % 2 === 0 ? "#1e2bfa" : "#111111") },
+        { color: "#fdfae7", duration: 0.3, ease: "none", stagger: 0.06 },
+        1.2,
+      );
+      tl.fromTo(
+        hits,
+        { scale: 1 },
+        { scale: 1.12, duration: 0.25, ease: "power2.out", stagger: 0.12 },
+        1.25,
+      );
+
+      // fly: every copy travels to the #1 slot (stacked), measured from layout (transform-free)
+      const SLOT_CX = 1552;
+      const SLOT_CY = 340;
+      const STACK = [-15, -5, 5, 15];
+      const EST_HIT_W = 514;
+      lanes.forEach((lane, i) => {
+        const hit = hits[i];
+        const k = Number(lane.getAttribute("data-hit"));
+        const w = hit.offsetWidth || EST_HIT_W;
+        const ol = hit.offsetWidth ? hit.offsetLeft : 21.5 + k * 108;
+        const ot = hit.offsetWidth ? hit.offsetTop : 58;
+        // chip centre in page coords before the lane scale
+        const cx0 = LANE_LEFT + 1.5 + ol + w / 2;
+        const cy0 = LANE_TOPS[i] + 1.5 + ot + 26;
+        // after the lane scales about its left-centre
+        const oy = LANE_TOPS[i] + 63;
+        const cx = LANE_LEFT + (cx0 - LANE_LEFT) * LANE_SCALE;
+        const cy = oy + (cy0 - oy) * LANE_SCALE;
+        // translate in the lane's (scaled) local space
+        const dx = (SLOT_CX - cx) / LANE_SCALE;
+        const dy = (SLOT_CY + STACK[i] - cy) / LANE_SCALE;
+        tl.fromTo(
+          hit,
+          { x: 0, y: 0 },
+          { x: dx, y: dy, duration: 0.8, ease: "power3.inOut" },
+          1.95 + i * 0.1,
+        );
+      });
+      tl.fromTo(
+        byId("out"),
+        { opacity: 0, scale: 0.96 },
+        { opacity: 1, scale: 1, duration: 0.45, ease: "power2.out" },
+        2.0,
+      );
+
+      // scale-swap: the bundle + copies shrink out (power2.in), ONE merged chip pops in (back.out)
+      const TRIGGER = 3.05;
+      const EXIT_DUR = 0.35;
+      const OVERLAP = 0.15;
+      tl.to(byId("out"), { scale: 0.7, opacity: 0, duration: EXIT_DUR, ease: "power2.in" }, TRIGGER);
+      tl.to(hits, { scale: 0.7 * 1.12, opacity: 0, duration: EXIT_DUR, ease: "power2.in" }, TRIGGER);
+      tl.fromTo(
+        byId("top"),
+        { scale: 0.7, opacity: 0 },
+        { scale: 1, opacity: 1, duration: 0.6, ease: "back.out(1.8)" },
+        TRIGGER + EXIT_DUR - OVERLAP,
+      );
+      // inner content reveals after the incoming settles
+      tl.fromTo(
+        byId("top-q"),
+        { opacity: 0, y: 12 },
+        { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" },
+        TRIGGER + EXIT_DUR + 0.25,
+      );
+
+      // four more chips settle below as #2–#5 (staggered cascade)
+      tl.fromTo(
+        cls(layer, "row"),
+        { opacity: 0, y: 18 },
+        { opacity: 1, y: 0, duration: 0.45, ease: "power3.out", stagger: 0.12 },
+        3.95,
+      );
+
+      /* ---------- Scene 3 (4.6–7.0s): line per-word, formula types in, hold ---------- */
+      tl.fromTo(
+        cls(layer, "word"),
+        { opacity: 0, y: 14 },
+        { opacity: 1, y: 0, duration: 0.32, ease: "power3.out", stagger: 0.035 },
+        4.6,
+      );
+      tl.fromTo(
+        byId("formula"),
+        { opacity: 0, scale: 0.94 },
+        { opacity: 1, scale: 1, duration: 0.25, ease: "power2.out", transformOrigin: "0% 50%" },
+        4.95,
+      );
+      cls(layer, "ch").forEach((c, i) => {
+        tl.fromTo(c, { opacity: 0 }, { opacity: 1, duration: 0.01, ease: "none" }, 5.02 + i * 0.017);
+      });
+
+      // hold: alive but resting — slow push-in on the merged column
+      tl.fromTo(
+        [byId("colA"), byId("colB")],
+        { scale: 1 },
+        { scale: 1.015, duration: 2.4, ease: "sine.inOut" },
+        4.6,
+      );
+
+      tl.set({}, {}, 7);
+      window.__timelines["04-merge"] = tl;
+    })();
+  </script>
 </template>

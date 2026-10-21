@@ -12,25 +12,23 @@
       }
       html,
       body {
-        margin: 0;
         width: 1920px;
         height: 1080px;
         overflow: hidden;
-        background: #0a0a0a;
+        background: #000;
       }
       #root {
+        position: relative;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #fdfae7;
+      }
+      .scene {
+        position: absolute;
+        inset: 0;
         width: 100%;
         height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-      }
-      #title {
-        color: #f4f4f5;
-        font-size: 72px;
-        font-weight: 600;
-        letter-spacing: -0.03em;
       }
     </style>
   </head>
@@ -39,17 +37,120 @@
       id="root"
       data-composition-id="main"
       data-start="0"
-      data-duration="10"
+      data-duration="59"
       data-width="1920"
       data-height="1080"
     >
-      <h1 id="title" class="clip" data-start="0" data-duration="10" data-track-index="0">Title</h1>
+      <div
+        id="el-01-hook"
+        class="scene"
+        data-composition-id="01-hook"
+        data-composition-src="compositions/frames/01-hook.html"
+        data-start="0"
+        data-duration="6.5"
+        data-track-index="0"
+      ></div>
+
+      <div
+        id="el-02-promise"
+        class="scene"
+        data-composition-id="02-promise"
+        data-composition-src="compositions/frames/02-promise.html"
+        data-start="6"
+        data-duration="7.5"
+        data-track-index="1"
+      ></div>
+
+      <div
+        id="el-03-search"
+        class="scene"
+        data-composition-id="03-search"
+        data-composition-src="compositions/frames/03-search.html"
+        data-start="13"
+        data-duration="8.5"
+        data-track-index="0"
+      ></div>
+
+      <div
+        id="el-04-merge"
+        class="scene"
+        data-composition-id="04-merge"
+        data-composition-src="compositions/frames/04-merge.html"
+        data-start="21"
+        data-duration="7.5"
+        data-track-index="1"
+      ></div>
+
+      <div
+        id="el-05-rerank"
+        class="scene"
+        data-composition-id="05-rerank"
+        data-composition-src="compositions/frames/05-rerank.html"
+        data-start="28"
+        data-duration="7.5"
+        data-track-index="0"
+      ></div>
+
+      <div
+        id="el-06-gate"
+        class="scene"
+        data-composition-id="06-gate"
+        data-composition-src="compositions/frames/06-gate.html"
+        data-start="35"
+        data-duration="10.5"
+        data-track-index="1"
+      ></div>
+
+      <div
+        id="el-07-answer"
+        class="scene"
+        data-composition-id="07-answer"
+        data-composition-src="compositions/frames/07-answer.html"
+        data-start="45"
+        data-duration="8.5"
+        data-track-index="0"
+      ></div>
+
+      <div
+        id="el-08-takeaway"
+        class="scene"
+        data-composition-id="08-takeaway"
+        data-composition-src="compositions/frames/08-takeaway.html"
+        data-start="53"
+        data-duration="6"
+        data-track-index="1"
+      ></div>
+
     </div>
+
     <script>
-      const tl = gsap.timeline({ paused: true });
-      // Example: tl.fromTo("#title", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.6 }, 0);
-      window.__timelines["main"] = tl;
-      tl.seek(0);
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = gsap.timeline({ paused: true });
+      // ── frame transitions (injected by transitions.mjs) ──
+      (function () { var tl = window.__timelines["main"];
+        tl.to("#el-01-hook", { opacity: 0, duration: 0.5, ease: "power2.inOut" }, 6);
+        tl.fromTo("#el-02-promise", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.inOut" }, 6);
+        tl.addLabel("hf:transition:01-hook:02-promise:crossfade", 6);
+        tl.to("#el-02-promise", { x: -1920, duration: 0.5, ease: "power3.inOut" }, 13);
+        tl.fromTo("#el-03-search", { x: 1920, opacity: 1 }, { x: 0, opacity: 1, duration: 0.5, ease: "power3.inOut" }, 13);
+        tl.addLabel("hf:transition:02-promise:03-search:push-slide", 13);
+        tl.to("#el-03-search", { x: -1920, duration: 0.5, ease: "power3.inOut" }, 21);
+        tl.fromTo("#el-04-merge", { x: 1920, opacity: 1 }, { x: 0, opacity: 1, duration: 0.5, ease: "power3.inOut" }, 21);
+        tl.addLabel("hf:transition:03-search:04-merge:push-slide", 21);
+        tl.to("#el-04-merge", { x: -1920, duration: 0.5, ease: "power3.inOut" }, 28);
+        tl.fromTo("#el-05-rerank", { x: 1920, opacity: 1 }, { x: 0, opacity: 1, duration: 0.5, ease: "power3.inOut" }, 28);
+        tl.addLabel("hf:transition:04-merge:05-rerank:push-slide", 28);
+        tl.to("#el-05-rerank", { x: -1920, duration: 0.5, ease: "power3.inOut" }, 35);
+        tl.fromTo("#el-06-gate", { x: 1920, opacity: 1 }, { x: 0, opacity: 1, duration: 0.5, ease: "power3.inOut" }, 35);
+        tl.addLabel("hf:transition:05-rerank:06-gate:push-slide", 35);
+        tl.to("#el-06-gate", { x: -1920, duration: 0.5, ease: "power3.inOut" }, 45);
+        tl.fromTo("#el-07-answer", { x: 1920, opacity: 1 }, { x: 0, opacity: 1, duration: 0.5, ease: "power3.inOut" }, 45);
+        tl.addLabel("hf:transition:06-gate:07-answer:push-slide", 45);
+        tl.to("#el-07-answer", { opacity: 0, duration: 0.5, ease: "power2.inOut" }, 53);
+        tl.fromTo("#el-08-takeaway", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.inOut" }, 53);
+        tl.addLabel("hf:transition:07-answer:08-takeaway:crossfade", 53);
+        tl.to({}, { duration: 59 }, 0); // full-span anchor — main.duration() == composition total (Studio master duration)
+      })();
     </script>
   </body>
 </html>
