@@ -1,0 +1,260 @@
+<template>
+  <style>
+    @font-face {
+      font-family: "Space Grotesk";
+      src: url("assets/fonts/space-grotesk-latin-500-normal.woff2") format("woff2");
+      font-weight: 500;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: "Space Grotesk";
+      src: url("assets/fonts/space-grotesk-latin-700-normal.woff2") format("woff2");
+      font-weight: 700;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: "Inter";
+      src: url("assets/fonts/inter-latin-400-normal.woff2") format("woff2");
+      font-weight: 400;
+      font-style: normal;
+    }
+
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      container-type: size;
+      font-family: "Inter", sans-serif;
+    }
+
+    /* background: cream ground + faint hairline grid (dimmed) */
+    .t08-ground {
+      position: absolute;
+      inset: 0;
+      background-color: #fdfae7;
+    }
+    .t08-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(to right, rgba(30, 43, 250, 0.06) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(30, 43, 250, 0.06) 1px, transparent 1px);
+      background-size: 5cqw 5cqw;
+      background-position: 0 0;
+    }
+
+    .t08-stage {
+      position: absolute;
+      inset: 0;
+    }
+
+    /* rail connector hairline (start state of the rail) */
+    #t08-connector {
+      position: absolute;
+      left: 96px;
+      top: 89px;
+      width: 1728px;
+      height: 2px;
+      border-radius: 1px;
+      background: rgba(30, 43, 250, 0.2);
+      transform-origin: 50% 50%;
+    }
+
+    /* five rail pills: absolutely placed at their COLLAPSED (final) slots;
+       the timeline starts them at their spread-rail positions via x/y offsets */
+    .t08-pill {
+      position: absolute;
+      top: 300px;
+      width: 190px;
+      height: 52px;
+      border-radius: 100px;
+      border: 1.5px solid #1e2bfa;
+      background-color: rgba(30, 43, 250, 0.04);
+      color: #1e2bfa;
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 500;
+      font-size: 22px;
+      letter-spacing: 0.01em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      white-space: nowrap;
+    }
+    .t08-pill b {
+      font-weight: 700;
+    }
+    .t08-pill.t08-pill-active {
+      background-color: #1e2bfa;
+      color: #fdfae7;
+    }
+    #t08-p1 { left: 453px; }
+    #t08-p2 { left: 659px; }
+    #t08-p3 { left: 865px; }
+    #t08-p4 { left: 1071px; }
+    #t08-p5 { left: 1277px; }
+
+    /* the distilled rule line (focal) */
+    .t08-rule {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 410px;
+      display: flex;
+      justify-content: center;
+    }
+    .t08-line {
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 700;
+      font-size: 4.2cqw;
+      line-height: 1.08;
+      letter-spacing: -0.02em;
+      color: #111111;
+      white-space: nowrap;
+      transform-origin: 50% 50%;
+    }
+    .t08-w {
+      display: inline-block;
+      position: relative;
+    }
+    .t08-w + .t08-w {
+      margin-left: 0.26em;
+    }
+    .t08-decline {
+      color: #1e2bfa;
+    }
+    #t08-underline {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -10px;
+      height: 4px;
+      border-radius: 2px;
+      background: #1e2bfa;
+      transform-origin: 0% 50%;
+    }
+
+    /* footer */
+    .t08-footer {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 580px;
+      text-align: center;
+      font-family: "Inter", sans-serif;
+      font-weight: 400;
+      font-size: 1.45cqw;
+      line-height: 1.6;
+      color: #6b6b6b;
+    }
+
+    /* final soft fade to the cream canvas */
+    .t08-fade {
+      position: absolute;
+      inset: 0;
+      background-color: #fdfae7;
+      opacity: 0;
+    }
+  </style>
+
+  <div id="root" data-composition-id="08-takeaway" data-width="1920" data-height="1080" data-duration="6">
+    <div id="t08-ground" class="t08-ground clip" data-start="0" data-duration="6" data-track-index="0">
+      <div class="t08-grid"></div>
+    </div>
+
+    <div id="t08-stage" class="t08-stage clip" data-start="0" data-duration="6" data-track-index="1">
+      <div id="t08-connector"></div>
+
+      <div class="t08-pill" id="t08-p1"><b>1</b>Search</div>
+      <div class="t08-pill" id="t08-p2"><b>2</b>Merge</div>
+      <div class="t08-pill" id="t08-p3"><b>3</b>Rerank</div>
+      <div class="t08-pill" id="t08-p4"><b>4</b>Check</div>
+      <div class="t08-pill t08-pill-active" id="t08-p5"><b>5</b>Answer</div>
+
+      <div class="t08-rule">
+        <div class="t08-line" id="t08-line"><span class="t08-w" id="t08-w1">Find.</span><span class="t08-w" id="t08-w2">Check.</span><span class="t08-w" id="t08-w3">Answer —</span><span class="t08-w t08-decline" id="t08-w4">or decline.<i id="t08-underline"></i></span></div>
+      </div>
+
+      <div class="t08-footer" id="t08-footer">Runs fully locally: models, index and the optional LLM.</div>
+    </div>
+
+    <div class="t08-fade clip" id="t08-fade" data-start="0" data-duration="6" data-track-index="2"></div>
+  </div>
+
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+
+      // ---- Scene 1 (0.0–1.4s): rail pills slide together into one centered row, fade to text-light
+      // Rail (start) slots: evenly spread across pad-x (96 → 1824) at top 64; collapsed slots in CSS.
+      const RAIL_TOP = 64, ROW_TOP = 300, PILL_W = 190;
+      const RAIL_STEP = (1728 - PILL_W) / 4; // 384.5
+      const ROW_LEFT = [453, 659, 865, 1071, 1277];
+      const pills = ["#t08-p1", "#t08-p2", "#t08-p3", "#t08-p4", "#t08-p5"];
+
+      pills.forEach(function (sel, i) {
+        const railLeft = 96 + RAIL_STEP * i;
+        tl.fromTo(
+          sel,
+          { x: railLeft - ROW_LEFT[i], y: RAIL_TOP - ROW_TOP },
+          { x: 0, y: 0, duration: 0.95, ease: "power3.inOut" },
+          0.15 + Math.abs(i - 2) * 0.04
+        );
+        tl.fromTo(
+          sel,
+          { color: i === 4 ? "#fdfae7" : "#1e2bfa", borderColor: "#1e2bfa", backgroundColor: i === 4 ? "rgba(30,43,250,1)" : "rgba(30,43,250,0.04)" },
+          { color: "#9a9a9a", borderColor: "rgba(154,154,154,0.6)", backgroundColor: "rgba(30,43,250,0)", duration: 0.7, ease: "sine.inOut" },
+          0.65
+        );
+      });
+      tl.fromTo("#t08-connector", { scaleX: 1, opacity: 1 }, { scaleX: 0.3, opacity: 0, duration: 0.6, ease: "power2.in" }, 0.1);
+
+      // ---- Scene 2 (1.4–4.0s): the rule builds one word per beat (kinetic-beat-slam, smooth settles)
+      const PULSE = 0.5;
+      const BEATS = [1.4, 1.4 + PULSE, 1.4 + PULSE * 2, 1.4 + PULSE * 3.1];
+
+      // beat 1 — scale + blur slam, smooth settle
+      tl.fromTo("#t08-w1",
+        { scale: 1.35, filter: "blur(12px)", opacity: 0 },
+        { scale: 1, filter: "blur(0px)", opacity: 1, duration: 0.5, ease: "power3.out" },
+        BEATS[0]);
+      // beat 2 — side snap
+      tl.fromTo("#t08-w2",
+        { x: -70, opacity: 0 },
+        { x: 0, opacity: 1, duration: 0.45, ease: "expo.out" },
+        BEATS[1]);
+      // beat 3 — rise
+      tl.fromTo("#t08-w3",
+        { y: 56, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.5, ease: "circ.out" },
+        BEATS[2]);
+      // beat 4 — cobalt completion: soft blur-in from the right, then the underline draws
+      tl.fromTo("#t08-w4",
+        { x: 48, filter: "blur(8px)", opacity: 0 },
+        { x: 0, filter: "blur(0px)", opacity: 1, duration: 0.6, ease: "power2.out" },
+        BEATS[3]);
+      tl.fromTo("#t08-underline",
+        { scaleX: 0 },
+        { scaleX: 1, duration: 0.45, ease: "power2.inOut" },
+        BEATS[3] + 0.4);
+
+      // ---- Scene 3 (footer + held read): footer reveals beneath, quiet single settle
+      tl.fromTo("#t08-footer",
+        { y: 16, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.45, ease: "power2.out" },
+        3.6);
+      tl.fromTo("#t08-line",
+        { scale: 1 },
+        { scale: 1.012, duration: 1.9, ease: "sine.inOut" },
+        3.65);
+
+      // final frame of the video: soft fade to the cream canvas
+      tl.fromTo("#t08-fade", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "sine.inOut" }, 5.6);
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines["08-takeaway"] = tl;
+    })();
+  </script>
+</template>
