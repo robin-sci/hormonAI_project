@@ -1,0 +1,377 @@
+<template id="f01-hook-template">
+  <div
+    id="root"
+    data-composition-id="01-hook"
+    data-start="0"
+    data-duration="6"
+    data-width="1920"
+    data-height="1080"
+  >
+    <style>
+      @font-face {
+        font-family: "Space Grotesk";
+        src: url("assets/fonts/space-grotesk-latin-500-normal.woff2") format("woff2");
+        font-weight: 500;
+        font-style: normal;
+        font-display: block;
+      }
+      @font-face {
+        font-family: "Space Grotesk";
+        src: url("assets/fonts/space-grotesk-latin-700-normal.woff2") format("woff2");
+        font-weight: 700;
+        font-style: normal;
+        font-display: block;
+      }
+      @font-face {
+        font-family: "Inter";
+        src: url("assets/fonts/inter-latin-400-normal.woff2") format("woff2");
+        font-weight: 400;
+        font-style: normal;
+        font-display: block;
+      }
+
+      #root {
+        position: relative;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        container-type: size;
+        font-family: "Inter", sans-serif;
+        color: #111111;
+      }
+
+      /* full-bleed ground: cream + faint cobalt hairline grid (background role, dimmed) */
+      #f01-hook-bg {
+        position: absolute;
+        inset: 0;
+        background: #fdfae7;
+      }
+      #f01-hook-grid {
+        position: absolute;
+        inset: -120px;
+        opacity: 0.35;
+        background-image:
+          linear-gradient(rgba(30, 43, 250, 0.22) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(30, 43, 250, 0.22) 1px, transparent 1px);
+        background-size: 96px 96px;
+        background-position: 0 0;
+      }
+
+      /* stage: holds the content stack, gets the slow macro push */
+      #f01-hook-stage {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        transform-origin: 50% 40%;
+      }
+
+      /* Scene 1 — the patient question (focal) */
+      #f01-hook-q {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 10.4cqw; /* ~200px */
+        text-align: center;
+      }
+      #f01-hook-q-wrap {
+        position: relative;
+        display: inline-block;
+        font-family: "Space Grotesk", sans-serif;
+        font-weight: 700;
+        font-size: 4.2cqw;
+        line-height: 1.08;
+        letter-spacing: -0.02em;
+        color: #111111;
+        white-space: nowrap;
+      }
+      /* invisible full string reserves the final width so centered typing never jitters */
+      #f01-hook-q-ghost {
+        visibility: hidden;
+      }
+      #f01-hook-q-live {
+        position: absolute;
+        left: 0;
+        top: 0;
+        white-space: pre;
+      }
+      #f01-hook-caret {
+        display: inline-block;
+        width: 0.07em;
+        height: 0.95em;
+        margin-left: 0.06em;
+        vertical-align: -0.12em;
+        background: #1e2bfa;
+        border-radius: 2px;
+      }
+
+      /* Scene 2 — the confident guess + its label */
+      #f01-hook-row {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 22.4cqw; /* ~430px */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 2.6cqw;
+      }
+      #f01-hook-chip {
+        display: inline-flex;
+        align-items: center;
+        padding: 1.15cqw 2.2cqw;
+        background: rgba(30, 43, 250, 0.04);
+        border: 1.5px solid rgba(30, 43, 250, 0.2);
+        border-radius: 100px;
+      }
+      #f01-hook-guess {
+        position: relative;
+        display: inline-block;
+        font-family: "Inter", sans-serif;
+        font-weight: 400;
+        font-size: 1.55cqw;
+        line-height: 1.3;
+        color: #6b6b6b;
+        white-space: nowrap;
+      }
+      #f01-hook-strike {
+        position: absolute;
+        left: -0.4cqw;
+        right: -0.4cqw;
+        top: 52%;
+        height: 4px;
+        margin-top: -2px;
+        background: #dc2626;
+        border-radius: 2px;
+        transform-origin: left center;
+      }
+      #f01-hook-label {
+        font-family: "Space Grotesk", sans-serif;
+        font-weight: 500;
+        font-size: 2.1cqw;
+        line-height: 1.2;
+        letter-spacing: -0.02em;
+        color: #111111;
+        white-space: nowrap;
+      }
+
+      /* Scene 3 — the payoff line */
+      #f01-hook-final {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 32.6cqw; /* ~626px */
+        text-align: center;
+        font-family: "Space Grotesk", sans-serif;
+        font-weight: 700;
+        font-size: 3.7cqw;
+        line-height: 1.08;
+        letter-spacing: -0.02em;
+        color: #111111;
+        white-space: nowrap;
+      }
+      #f01-hook-accent {
+        display: block;
+        width: 60px;
+        height: 4px;
+        margin: 0 auto 1.6cqw;
+        background: #1e2bfa;
+        border-radius: 2px;
+        transform-origin: center center;
+      }
+
+      .w01-hook {
+        display: inline-block;
+        white-space: pre;
+      }
+      .w01-hook-cobalt {
+        color: #1e2bfa;
+      }
+    </style>
+
+    <div
+      id="f01-hook-bg"
+      class="clip"
+      data-start="0"
+      data-duration="6"
+      data-track-index="0"
+    >
+      <div id="f01-hook-grid"></div>
+    </div>
+
+    <div
+      id="f01-hook-stage"
+      class="clip"
+      data-start="0"
+      data-duration="6"
+      data-track-index="1"
+    >
+      <div id="f01-hook-q">
+        <span id="f01-hook-q-wrap"
+          ><span id="f01-hook-q-ghost">How long will I be on tamoxifen?</span
+          ><span id="f01-hook-q-live"><span id="f01-hook-q-text"></span><span id="f01-hook-caret"></span></span
+        ></span>
+      </div>
+
+      <div id="f01-hook-row">
+        <div id="f01-hook-chip">
+          <span id="f01-hook-guess"
+            >Probably 2 years — you can stop when you feel better.<span id="f01-hook-strike"></span
+          ></span>
+        </div>
+        <div id="f01-hook-label"
+          ><span class="w01-hook w01-hook-l">A </span
+          ><span class="w01-hook w01-hook-l">chatbot </span
+          ><span class="w01-hook w01-hook-l">could </span
+          ><span class="w01-hook w01-hook-l">guess.</span
+        ></div>
+      </div>
+
+      <div id="f01-hook-final">
+        <span id="f01-hook-accent"></span>
+        <span class="w01-hook w01-hook-f">A </span
+        ><span class="w01-hook w01-hook-f">medical </span
+        ><span class="w01-hook w01-hook-f">chatbot </span
+        ><span class="w01-hook w01-hook-f w01-hook-cobalt">must </span
+        ><span class="w01-hook w01-hook-f w01-hook-cobalt">not.</span>
+      </div>
+    </div>
+
+    <script src="assets/vendor/gsap.min.js"></script>
+    <script>
+      (function () {
+        window.__timelines = window.__timelines || {};
+        var FRAME = "01-hook";
+        var DUR = 6;
+        var root = document.querySelector('[data-composition-id="01-hook"]');
+        var $ = function (id) {
+          return root.querySelector("#f01-hook-" + id);
+        };
+        var tl = gsap.timeline({ paused: true });
+
+        /* ---------- macro camera: slow push + grid drift underneath ---------- */
+        tl.fromTo($("stage"), { scale: 1 }, { scale: 1.03, duration: DUR, ease: "sine.inOut" }, 0);
+        tl.fromTo($("grid"), { x: 0, y: 0 }, { x: -24, y: -36, duration: DUR, ease: "none" }, 0);
+
+        /* ---------- Scene 1 (0.0–2.0s): discrete-text-sequence typing ---------- */
+        var Q = "How long will I be on tamoxifen?";
+        var SEQUENCE = [
+          { t: 0.0, text: "" },
+          { t: 0.1, text: "H" },
+          { t: 0.17, text: "How" },
+          { t: 0.26, text: "How l" },
+          { t: 0.34, text: "How long" },
+          { t: 0.5, text: "How long will" },
+          { t: 0.62, text: "How long will I" },
+          { t: 0.8, text: "How long will I be" },
+          { t: 0.9, text: "How long will I be on" },
+          { t: 1.04, text: "How long will I be on tam" },
+          { t: 1.12, text: "How long will I be on tamox" },
+          { t: 1.2, text: "How long will I be on tamoxif" },
+          { t: 1.28, text: "How long will I be on tamoxifne" },
+          { t: 1.48, text: "How long will I be on tamoxifn" },
+          { t: 1.56, text: "How long will I be on tamoxif" },
+          { t: 1.68, text: Q },
+        ];
+        var TYPE_END = 1.8;
+        var CARET_OFF = 3.6;
+        var BLINK_CYCLES = 9; // one cycle per ~0.67s
+        function textAt(time) {
+          for (var i = SEQUENCE.length - 1; i >= 0; i--) {
+            if (time >= SEQUENCE[i].t) return SEQUENCE[i].text;
+          }
+          return "";
+        }
+        var textEl = $("q-text");
+        var caretEl = $("caret");
+        var lastText = null;
+        var driver = { t: 0 };
+        tl.to(
+          driver,
+          {
+            t: DUR,
+            duration: DUR,
+            ease: "none",
+            onUpdate: function () {
+              var s = textAt(driver.t);
+              if (s !== lastText) {
+                textEl.textContent = s;
+                lastText = s;
+              }
+              var on;
+              if (driver.t < TYPE_END) on = true; // solid while typing
+              else if (driver.t >= CARET_OFF) on = false; // gone for the still hold
+              else on = Math.sin((driver.t / DUR) * Math.PI * 2 * BLINK_CYCLES) > 0;
+              caretEl.style.opacity = on ? "1" : "0";
+            },
+          },
+          0
+        );
+        // the question line settles in as it starts typing (hero visible from t≈0.1)
+        tl.fromTo($("q"), { y: 14 }, { y: 0, duration: 0.6, ease: "power2.out" }, 0);
+
+        /* ---------- dynamic-content-sequencing: per-word start times from content length ---------- */
+        function sequenceWords(els, start, base, secPerChar) {
+          var cumulative = start;
+          return els.map(function (el) {
+            var s = cumulative;
+            cumulative += base + el.textContent.trim().length * secPerChar;
+            return { el: el, start: s };
+          });
+        }
+        function revealWords(seq, dy, dur) {
+          seq.forEach(function (w) {
+            tl.fromTo(
+              w.el,
+              { opacity: 0, y: dy, filter: "blur(6px)" },
+              { opacity: 1, y: 0, filter: "blur(0px)", duration: dur, ease: "power3.out" },
+              w.start
+            );
+          });
+        }
+
+        /* ---------- Scene 2 (2.0–3.6s): confident guess, struck through ---------- */
+        tl.fromTo(
+          $("chip"),
+          { opacity: 0, y: 46 },
+          { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" },
+          2.0
+        );
+        // css-marker-patterns (sketchout stroke): red strike draws left → right across the guess
+        tl.fromTo(
+          $("strike"),
+          { scaleX: 0, rotation: -0.5 },
+          { scaleX: 1, rotation: -0.5, duration: 0.45, ease: "power2.inOut" },
+          2.6
+        );
+        var labelWords = Array.prototype.slice.call(root.querySelectorAll(".w01-hook-l"));
+        revealWords(sequenceWords(labelWords, 2.7, 0.08, 0.025), 22, 0.45);
+
+        /* ---------- Scene 3 (3.6–6.0s): guess dims, payoff lands ---------- */
+        tl.to($("chip"), { opacity: 0.3, duration: 0.5, ease: "power2.out" }, 3.6);
+        tl.fromTo(
+          $("accent"),
+          { scaleX: 0 },
+          { scaleX: 1, duration: 0.4, ease: "power2.out" },
+          3.65
+        );
+        var finalWords = Array.prototype.slice.call(root.querySelectorAll(".w01-hook-f"));
+        revealWords(sequenceWords(finalWords, 3.7, 0.05, 0.012), 34, 0.35);
+        // small settle on the cobalt emphasis once the line has landed; then hold still
+        var emph = Array.prototype.slice.call(root.querySelectorAll(".w01-hook-cobalt"));
+        tl.fromTo(
+          emph,
+          { scale: 1.06 },
+          { scale: 1, duration: 0.3, ease: "power2.out" },
+          4.2
+        );
+
+        // pin the timeline to the full frame length
+        tl.set({}, {}, DUR);
+
+        window.__timelines[FRAME] = tl;
+      })();
+    </script>
+  </div>
+</template>
