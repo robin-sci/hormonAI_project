@@ -1,0 +1,480 @@
+<template>
+  <style>
+    @font-face { font-family: "Inter"; src: url("assets/fonts/inter-latin-400-normal.woff2") format("woff2"); font-weight: 400; font-style: normal; }
+    @font-face { font-family: "Inter"; src: url("assets/fonts/inter-latin-500-normal.woff2") format("woff2"); font-weight: 500; font-style: normal; }
+    @font-face { font-family: "Space Grotesk"; src: url("assets/fonts/space-grotesk-latin-500-normal.woff2") format("woff2"); font-weight: 500; font-style: normal; }
+    @font-face { font-family: "Space Grotesk"; src: url("assets/fonts/space-grotesk-latin-600-normal.woff2") format("woff2"); font-weight: 600; font-style: normal; }
+    @font-face { font-family: "Space Grotesk"; src: url("assets/fonts/space-grotesk-latin-700-normal.woff2") format("woff2"); font-weight: 700; font-style: normal; }
+
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      font-family: "Inter", sans-serif;
+      color: #111111;
+    }
+    .f06-gate-ground {
+      position: absolute;
+      inset: 0;
+      background: #fdfae7;
+    }
+
+    /* ---------- progress rail (shared across frames 03-07) ---------- */
+    .f06-gate-rail {
+      position: absolute;
+      left: 96px;
+      top: 52px;
+      width: 1728px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .f06-gate-rail-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 27px;
+      height: 2px;
+      background: rgba(30, 43, 250, 0.2);
+    }
+    .f06-gate-step {
+      position: relative;
+      width: 210px;
+      height: 56px;
+      border-radius: 100px;
+      border: 1.5px solid rgba(30, 43, 250, 0.2);
+      background: #fdfae7;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .f06-gate-step.f06-gate-done { background: #f5f2e5; }
+    .f06-gate-step-fill {
+      position: absolute;
+      inset: 0;
+      background: #1e2bfa;
+      border-radius: 100px;
+      transform-origin: 0% 50%;
+      opacity: 0;
+    }
+    .f06-gate-step-label {
+      position: relative;
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 600;
+      font-size: 22px;
+      letter-spacing: 0.01em;
+      color: #1e2bfa;
+      white-space: nowrap;
+    }
+    .f06-gate-step-label b {
+      font-weight: 700;
+      margin-right: 8px;
+    }
+    .f06-gate-upcoming .f06-gate-step-label { color: #9a9a9a; }
+
+    /* ---------- step title ---------- */
+    .f06-gate-title {
+      position: absolute;
+      left: 96px;
+      top: 150px;
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 600;
+      font-size: 50px;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      color: #111111;
+      white-space: nowrap;
+    }
+    .f06-gate-title span { color: #1e2bfa; }
+
+    /* ---------- checkpoint gate (focal) ---------- */
+    .f06-gate-bar {
+      position: absolute;
+      left: 560px;
+      top: 262px;
+      width: 22px;
+      height: 600px;
+      border-radius: 100px;
+      background: rgba(30, 43, 250, 0.15);
+      border: 1.5px solid rgba(30, 43, 250, 0.2);
+      overflow: hidden;
+      transform-origin: 50% 50%;
+    }
+    .f06-gate-scan {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      height: 120px;
+      border-radius: 100px;
+      background: #1e2bfa;
+    }
+    .f06-gate-bar-glow {
+      position: absolute;
+      left: 536px;
+      top: 262px;
+      width: 70px;
+      height: 600px;
+      border-radius: 100px;
+      background: rgba(30, 43, 250, 0.15);
+      filter: blur(14px);
+      opacity: 0;
+    }
+
+    /* ---------- svg layer: exit paths + row outlines ---------- */
+    .f06-gate-svg {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1920px;
+      height: 1080px;
+      overflow: visible;
+    }
+    .f06-gate-svg .f06-gate-faint {
+      fill: none;
+      stroke: rgba(30, 43, 250, 0.22);
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .f06-gate-svg .f06-gate-lit {
+      fill: none;
+      stroke: #1e2bfa;
+      stroke-width: 3;
+      stroke-linecap: round;
+    }
+    .f06-gate-svg .f06-gate-lit-soft {
+      fill: none;
+      stroke: rgba(30, 43, 250, 0.55);
+      stroke-width: 2.5;
+      stroke-linecap: round;
+    }
+
+    /* ---------- exit rows ---------- */
+    .f06-gate-row {
+      position: absolute;
+      left: 820px;
+      width: 1004px;
+    }
+    .f06-gate-row-fill {
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      background: rgba(30, 43, 250, 0.04);
+      opacity: 0;
+    }
+    .f06-gate-row-fill.f06-gate-win {
+      background: rgba(30, 43, 250, 0.08);
+    }
+    .f06-gate-row-rule {
+      position: absolute;
+      left: 0;
+      top: 18px;
+      bottom: 18px;
+      width: 4px;
+      border-radius: 2px;
+      background: #1e2bfa;
+      transform-origin: 50% 0%;
+    }
+    .f06-gate-icon {
+      position: absolute;
+      left: 30px;
+      top: 26px;
+      width: 60px;
+      height: 60px;
+    }
+    .f06-gate-icon svg { width: 60px; height: 60px; display: block; overflow: visible; }
+    .f06-gate-text {
+      position: absolute;
+      left: 116px;
+      top: 26px;
+    }
+    .f06-gate-main {
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 600;
+      font-size: 38px;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      color: #111111;
+      white-space: nowrap;
+    }
+    .f06-gate-main .f06-gate-arrow { color: #1e2bfa; padding: 0 6px; }
+    .f06-gate-sub {
+      margin-top: 10px;
+      font-family: "Inter", sans-serif;
+      font-weight: 400;
+      font-size: 28px;
+      line-height: 1.45;
+      color: #6b6b6b;
+    }
+    .f06-gate-pill {
+      display: inline-block;
+      padding: 2px 16px 4px;
+      border-radius: 100px;
+      background: rgba(30, 43, 250, 0.08);
+      color: #1e2bfa;
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 500;
+      font-size: 26px;
+      line-height: 1.3;
+    }
+    .f06-gate-decline {
+      display: inline-block;
+      color: #1e2bfa;
+      transform-origin: 50% 60%;
+    }
+    .f06-gate-quote {
+      position: absolute;
+      left: 116px;
+      top: 98px;
+      width: 858px;
+      height: 92px;
+      border-radius: 12px;
+      background: rgba(30, 43, 250, 0.08);
+      border-left: 4px solid #1e2bfa;
+      display: flex;
+      align-items: center;
+      box-sizing: border-box;
+      padding-left: 28px;
+    }
+    .f06-gate-quote-text {
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 500;
+      font-size: 32px;
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+      color: #111111;
+      white-space: nowrap;
+    }
+
+    /* ---------- the #1 card (supporting) ---------- */
+    .f06-gate-card {
+      position: absolute;
+      left: 96px;
+      top: 480px;
+      width: 440px;
+      height: 164px;
+      box-sizing: border-box;
+      padding: 22px 26px;
+      border-radius: 14px;
+      background: #f3f1ea;
+      border: 1.5px solid rgba(30, 43, 250, 0.2);
+      transform-origin: 50% 50%;
+    }
+    .f06-gate-card-pill {
+      display: inline-block;
+      padding: 3px 14px 4px;
+      border-radius: 100px;
+      background: #1e2bfa;
+      color: #fdfae7;
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 700;
+      font-size: 20px;
+      line-height: 1.2;
+    }
+    .f06-gate-card-q {
+      margin-top: 12px;
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 500;
+      font-size: 28px;
+      line-height: 1.25;
+      letter-spacing: -0.01em;
+      color: #111111;
+    }
+  </style>
+
+  <div id="root" data-composition-id="06-gate" data-start="0" data-duration="10" data-width="1920" data-height="1080">
+    <div class="f06-gate-ground clip" data-start="0" data-duration="10" data-track-index="0"></div>
+
+    <!-- progress rail -->
+    <div class="f06-gate-rail">
+      <div class="f06-gate-rail-line"></div>
+      <div class="f06-gate-step f06-gate-done"><span class="f06-gate-step-label"><b>1</b>Search</span></div>
+      <div class="f06-gate-step f06-gate-done"><span class="f06-gate-step-label"><b>2</b>Merge</span></div>
+      <div class="f06-gate-step" id="f06-gate-step3"><div class="f06-gate-step-fill"></div><span class="f06-gate-step-label"><b>3</b>Rerank</span></div>
+      <div class="f06-gate-step" id="f06-gate-step4"><div class="f06-gate-step-fill"></div><span class="f06-gate-step-label"><b>4</b>Check</span></div>
+      <div class="f06-gate-step f06-gate-upcoming"><span class="f06-gate-step-label"><b>5</b>Answer</span></div>
+    </div>
+
+    <!-- step title -->
+    <div class="f06-gate-title" id="f06-gate-title"><span>4</span> · Check</div>
+
+    <!-- exit paths + row outlines (svg-path-draw) -->
+    <svg class="f06-gate-svg" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg">
+      <path class="f06-gate-faint" id="f06-gate-path1" d="M 584 562 C 700 562 700 348 820 348" />
+      <path class="f06-gate-faint" id="f06-gate-path2" d="M 584 562 C 700 562 700 548 820 548" />
+      <path class="f06-gate-faint" id="f06-gate-path3" d="M 584 562 C 700 562 700 770 820 770" />
+      <rect class="f06-gate-faint" id="f06-gate-out1" x="820" y="262" width="1004" height="172" rx="14" />
+      <rect class="f06-gate-faint" id="f06-gate-out2" x="820" y="452" width="1004" height="192" rx="14" />
+      <rect class="f06-gate-faint" id="f06-gate-out3" x="820" y="662" width="1004" height="216" rx="14" />
+      <path class="f06-gate-lit" id="f06-gate-lit1" d="M 584 562 C 700 562 700 348 820 348" />
+      <path class="f06-gate-lit-soft" id="f06-gate-lit2" d="M 584 562 C 700 562 700 548 820 548" />
+      <path class="f06-gate-lit-soft" id="f06-gate-lit3" d="M 584 562 C 700 562 700 770 820 770" />
+    </svg>
+
+    <!-- checkpoint gate -->
+    <div class="f06-gate-bar-glow" id="f06-gate-glow"></div>
+    <div class="f06-gate-bar" id="f06-gate-bar"><div class="f06-gate-scan" id="f06-gate-scan"></div></div>
+
+    <!-- exit 1: clear match -->
+    <div class="f06-gate-row" style="top: 262px; height: 172px;">
+      <div class="f06-gate-row-fill f06-gate-win" id="f06-gate-fill1"></div>
+      <div class="f06-gate-row-rule" id="f06-gate-rule1"></div>
+      <div class="f06-gate-icon" id="f06-gate-icon1">
+        <svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="30" cy="30" r="28" fill="rgba(5,150,105,0.10)" stroke="#059669" stroke-width="2" />
+          <path id="f06-gate-check" d="M 18 31 L 26.5 39.5 L 42 22" fill="none" stroke="#059669" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </div>
+      <div class="f06-gate-text">
+        <div class="f06-gate-main" id="f06-gate-main1">Clear match<span class="f06-gate-arrow">→</span>answer</div>
+        <div class="f06-gate-sub" id="f06-gate-sub1" style="width: 560px;">or: a rare, specific term (e.g. a drug name) + close meaning → answer</div>
+      </div>
+    </div>
+
+    <!-- exit 2: only in the other language -->
+    <div class="f06-gate-row" style="top: 452px; height: 192px;">
+      <div class="f06-gate-row-fill" id="f06-gate-fill2"></div>
+      <div class="f06-gate-icon" id="f06-gate-icon2">
+        <svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="30" cy="30" r="28" fill="rgba(30,43,250,0.06)" stroke="#1e2bfa" stroke-width="2" />
+          <ellipse cx="30" cy="30" rx="10" ry="20" fill="none" stroke="#1e2bfa" stroke-width="2" />
+          <line x1="10" y1="30" x2="50" y2="30" stroke="#1e2bfa" stroke-width="2" />
+          <line x1="30" y1="10" x2="30" y2="50" stroke="#1e2bfa" stroke-width="2" />
+        </svg>
+      </div>
+      <div class="f06-gate-text">
+        <div class="f06-gate-main" id="f06-gate-main2">Only in the other language<span class="f06-gate-arrow">→</span>shown as-is</div>
+        <div class="f06-gate-sub" id="f06-gate-sub2" style="width: 860px;">labelled <span class="f06-gate-pill">only available in French</span> — never machine-translated</div>
+      </div>
+    </div>
+
+    <!-- exit 3: nothing fits -->
+    <div class="f06-gate-row" style="top: 662px; height: 216px;">
+      <div class="f06-gate-row-fill" id="f06-gate-fill3"></div>
+      <div class="f06-gate-icon" id="f06-gate-icon3">
+        <svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="30" cy="30" r="28" fill="rgba(30,43,250,0.04)" stroke="#6b6b6b" stroke-width="2" />
+          <line x1="18" y1="30" x2="42" y2="30" stroke="#6b6b6b" stroke-width="4" stroke-linecap="round" />
+        </svg>
+      </div>
+      <div class="f06-gate-text">
+        <div class="f06-gate-main" id="f06-gate-main3">Nothing fits<span class="f06-gate-arrow">→</span><span class="f06-gate-decline" id="f06-gate-decline">decline</span></div>
+      </div>
+      <div class="f06-gate-quote" id="f06-gate-quote">
+        <div class="f06-gate-quote-text">“Please discuss this with your oncology team.”</div>
+      </div>
+    </div>
+
+    <!-- the #1 card from Rerank -->
+    <div class="f06-gate-card" id="f06-gate-card">
+      <span class="f06-gate-card-pill">#1</span>
+      <div class="f06-gate-card-q">How long do I need to take hormone therapy?</div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var root = document.querySelector('[data-composition-id="06-gate"]');
+      var $ = function (id) { return root.querySelector("#f06-gate-" + id); };
+      var CREAM = "#fdfae7";
+      var COBALT = "#1e2bfa";
+      var tl = gsap.timeline({ paused: true });
+
+      // svg-path-draw setup: measured lengths, dash fully offset (invisible)
+      var drawn = ["path1", "path2", "path3", "out1", "out2", "out3", "lit1", "lit2", "lit3", "check"];
+      var len = {};
+      drawn.forEach(function (k) {
+        var el = $(k);
+        var L = Math.ceil(el.getTotalLength() * 1.02);
+        len[k] = L;
+        el.style.strokeDasharray = L + " " + L;
+        el.style.strokeDashoffset = L;
+      });
+      var draw = function (k, at, dur, ease) {
+        tl.fromTo($(k), { strokeDashoffset: len[k] }, { strokeDashoffset: 0, duration: dur, ease: ease || "power2.out" }, at);
+      };
+
+      // ---- Scene 1 (0.0-1.5s): rail advances, title, card slides into the gate, exits draw as faint outlines ----
+      var s3 = $("step3"), s4 = $("step4");
+      var s3fill = s3.querySelector(".f06-gate-step-fill");
+      var s3label = s3.querySelector(".f06-gate-step-label");
+      var s4fill = s4.querySelector(".f06-gate-step-fill");
+      var s4label = s4.querySelector(".f06-gate-step-label");
+      // "3 Rerank" starts active (solid) and turns to a done outline
+      tl.fromTo(s3fill, { opacity: 1 }, { opacity: 0, duration: 0.45, ease: "power2.out" }, 0.1);
+      tl.fromTo(s3label, { color: CREAM }, { color: COBALT, duration: 0.45, ease: "power2.out" }, 0.1);
+      tl.fromTo(s3, { backgroundColor: CREAM }, { backgroundColor: "#f5f2e5", duration: 0.45, ease: "power2.out" }, 0.1);
+      // "4 Check" fills cobalt from the left
+      tl.fromTo(s4fill, { opacity: 1, scaleX: 0 }, { scaleX: 1, duration: 0.55, ease: "power3.out" }, 0.3);
+      tl.fromTo(s4label, { color: "#9a9a9a" }, { color: CREAM, duration: 0.35, ease: "power2.out" }, 0.4);
+
+      tl.fromTo($("title"), { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 0.15);
+
+      // checkpoint bar rises from its centre
+      tl.fromTo($("bar"), { scaleY: 0, opacity: 0 }, { scaleY: 1, opacity: 1, duration: 0.6, ease: "power3.out" }, 0.1);
+
+      // #1 card slides in from the left and docks against the bar
+      tl.fromTo($("card"), { x: -560, opacity: 0 }, { x: 0, opacity: 1, duration: 0.8, ease: "power3.out" }, 0.1);
+      tl.fromTo($("glow"), { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power1.out" }, 0.85);
+      tl.to($("glow"), { opacity: 0.35, duration: 0.5, ease: "power1.out" }, 1.1);
+
+      // three exit paths + row outlines draw as faint outlines (stagger ~75%)
+      draw("path1", 0.6, 0.45);
+      draw("path2", 0.72, 0.45);
+      draw("path3", 0.84, 0.45);
+      draw("out1", 0.8, 0.5);
+      draw("out2", 0.95, 0.5);
+      draw("out3", 1.1, 0.5);
+
+      // gate scans the card
+      tl.fromTo($("scan"), { y: -130 }, { y: 610, duration: 0.6, ease: "power1.inOut" }, 0.95);
+
+      // ---- Scene 2 (1.5-4.0s): exit 1 lights cobalt with a green check; card travels along it and parks ----
+      draw("lit1", 1.5, 0.45);
+      tl.fromTo($("fill1"), { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power1.out" }, 1.6);
+      tl.fromTo($("rule1"), { scaleY: 0 }, { scaleY: 1, duration: 0.4, ease: "power2.out" }, 1.65);
+      tl.fromTo($("icon1"), { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.45, ease: "back.out(2)" }, 1.75);
+      draw("check", 1.9, 0.35);
+
+      // card shrinks through the gate, rides the path, then parks at the row's end
+      var card = $("card");
+      tl.to(card, { x: 330, scale: 0.62, duration: 0.35, ease: "power2.in" }, 1.95);
+      tl.to(card, { x: 564, y: -214, duration: 0.3, ease: "sine.inOut" }, 2.3);
+      tl.to(card, { x: 1347, duration: 0.5, ease: "power3.out" }, 2.6);
+      tl.to(card, { backgroundColor: "#ffffff", borderColor: "rgba(30,43,250,0.45)", duration: 0.4, ease: "power1.out" }, 2.9);
+
+      tl.fromTo($("main1"), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 2.7);
+      tl.fromTo($("sub1"), { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 3.2);
+
+      // ---- Scene 3 (4.0-6.0s): exit 2 lights — shown as-is, labelled, never machine-translated ----
+      draw("lit2", 4.0, 0.45);
+      tl.fromTo($("fill2"), { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power1.out" }, 4.1);
+      tl.fromTo($("icon2"), { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.45, ease: "back.out(2)" }, 4.2);
+      tl.fromTo($("main2"), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 4.3);
+      tl.fromTo($("sub2"), { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 4.85);
+
+      // ---- Scene 4 (6.0-10.0s): exit 3 lights — decline, quoted reply, held read ----
+      draw("lit3", 6.0, 0.45);
+      tl.fromTo($("fill3"), { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power1.out" }, 6.1);
+      tl.fromTo($("icon3"), { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.45, ease: "back.out(2)" }, 6.2);
+      tl.fromTo($("main3"), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 6.3);
+      // keyword glow on "decline"
+      var dec = $("decline");
+      tl.fromTo(dec, { scale: 1, textShadow: "0px 0px 0px rgba(30,43,250,0)" },
+        { scale: 1.1, textShadow: "0px 0px 22px rgba(30,43,250,0.55)", duration: 0.35, ease: "power2.out" }, 6.75);
+      tl.to(dec, { scale: 1, textShadow: "0px 0px 8px rgba(30,43,250,0.22)", duration: 0.5, ease: "power2.inOut" }, 7.1);
+      // the polite reply in a tinted card
+      tl.fromTo($("quote"), { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.55, ease: "power3.out" }, 7.0);
+      // quiet settle on the gate through the held read
+      tl.fromTo($("glow"), { opacity: 0.35 }, { opacity: 0.6, duration: 2.0, ease: "sine.inOut" }, 7.8);
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines["06-gate"] = tl;
+    })();
+  </script>
+</template>

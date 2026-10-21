@@ -1,0 +1,249 @@
+<template>
+  <style>
+    @font-face { font-family: "Inter"; font-weight: 400; font-style: normal; src: url("assets/fonts/inter-latin-400-normal.woff2") format("woff2"); }
+    @font-face { font-family: "Inter"; font-weight: 500; font-style: normal; src: url("assets/fonts/inter-latin-500-normal.woff2") format("woff2"); }
+    @font-face { font-family: "Space Grotesk"; font-weight: 500; font-style: normal; src: url("assets/fonts/space-grotesk-latin-500-normal.woff2") format("woff2"); }
+    @font-face { font-family: "Space Grotesk"; font-weight: 600; font-style: normal; src: url("assets/fonts/space-grotesk-latin-600-normal.woff2") format("woff2"); }
+    @font-face { font-family: "Space Grotesk"; font-weight: 700; font-style: normal; src: url("assets/fonts/space-grotesk-latin-700-normal.woff2") format("woff2"); }
+
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      container-type: size;
+      font-family: "Inter", sans-serif;
+      color: #111111;
+    }
+    #root * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* full-bleed ground */
+    #root .\30 5-rerank-bg { position: absolute; inset: 0; background: #fdfae7; }
+
+    /* ---- progress rail ---- */
+    #root .\30 5-rerank-rail { position: absolute; left: 96px; top: 40px; width: 1728px; height: 48px; }
+    #root .\30 5-rerank-rail-line {
+      position: absolute; left: 110px; top: 23px; width: 1508px; height: 2px;
+      background: rgba(30, 43, 250, 0.2); border-radius: 2px;
+    }
+    #root .\30 5-rerank-rail-fill {
+      position: absolute; left: 110px; top: 23px; width: 1508px; height: 2px;
+      background: #1e2bfa; transform-origin: left center; transform: scaleX(0.25);
+    }
+    #root .\30 5-rerank-pill {
+      position: absolute; top: 0; width: 220px; height: 48px; border-radius: 100px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: "Space Grotesk", sans-serif; font-weight: 600; font-size: 22px; letter-spacing: 0.02em;
+      background: #fdfae7; border: 1.5px solid rgba(30, 43, 250, 0.2); color: #9a9a9a;
+    }
+    #root .\30 5-rerank-pill.\30 5-rerank-done { border-color: #1e2bfa; color: #1e2bfa; background: #fdfae7; }
+    #root .\30 5-rerank-pill.\30 5-rerank-active { border-color: #1e2bfa; color: #fdfae7; background: #1e2bfa; }
+
+    /* ---- header ---- */
+    #root .\30 5-rerank-title {
+      position: absolute; left: 96px; top: 140px;
+      font-family: "Space Grotesk", sans-serif; font-weight: 600; font-size: 50px; line-height: 1.1;
+      letter-spacing: -0.02em; color: #111111;
+    }
+    #root .\30 5-rerank-title b { color: #1e2bfa; font-weight: 600; }
+    #root .\30 5-rerank-sub {
+      position: absolute; left: 96px; top: 222px; width: 580px;
+      font-family: "Inter", sans-serif; font-weight: 400; font-size: 29px; line-height: 1.45; color: #6b6b6b;
+    }
+    #root .\30 5-rerank-w { display: inline-block; }
+
+    /* ---- question card (pinned left) ---- */
+    #root .\30 5-rerank-q {
+      position: absolute; left: 96px; top: 452px; width: 560px; height: 216px;
+      background: rgba(30, 43, 250, 0.08); border-left: 4px solid #1e2bfa; border-radius: 12px;
+      padding: 0 40px; display: flex; align-items: center;
+      font-family: "Space Grotesk", sans-serif; font-weight: 500; font-size: 40px; line-height: 1.25;
+      letter-spacing: -0.02em; color: #111111;
+    }
+    #root .\30 5-rerank-qdot {
+      position: absolute; left: 648px; top: 552px; width: 16px; height: 16px; border-radius: 50%;
+      background: #1e2bfa;
+    }
+
+    /* ---- connectors ---- */
+    #root .\30 5-rerank-svg { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: visible; }
+    #root .\30 5-rerank-path { fill: none; stroke: #1e2bfa; stroke-width: 3; stroke-linecap: round; }
+
+    /* ---- shortlist cards ---- */
+    #root .\30 5-rerank-card {
+      position: absolute; left: 760px; width: 1064px; height: 112px;
+      background: #f4f2e8; /* opaque 4% cobalt on cream: cards cross during the reorder */ border: 2px solid rgba(30, 43, 250, 0.2); border-radius: 14px;
+      padding: 18px 32px 0 32px; overflow: hidden; transform-origin: left center;
+    }
+    #root .\30 5-rerank-ct {
+      font-family: "Inter", sans-serif; font-weight: 500; font-size: 28px; line-height: 40px;
+      color: #111111; white-space: nowrap;
+    }
+    #root .\30 5-rerank-track {
+      position: absolute; left: 32px; right: 32px; bottom: 20px; height: 10px;
+      background: rgba(30, 43, 250, 0.08); border-radius: 6px; overflow: hidden;
+    }
+    #root .\30 5-rerank-fill {
+      display: block; width: 100%; height: 100%; background: #1e2bfa; border-radius: 6px;
+      transform-origin: left center; transform: scaleX(0);
+    }
+    #root .\30 5-rerank-top {
+      position: absolute; right: 28px; top: 18px; height: 40px; padding: 0 20px; border-radius: 100px;
+      background: #1e2bfa; color: #fdfae7; display: flex; align-items: center;
+      font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 24px; letter-spacing: 0.02em;
+    }
+
+    /* ---- reading bracket ---- */
+    #root .\30 5-rerank-lens { position: absolute; left: 744px; top: 228px; width: 1096px; height: 136px; }
+    #root .\30 5-rerank-br {
+      position: absolute; top: 0; width: 24px; height: 136px;
+      border-top: 4px solid #1e2bfa; border-bottom: 4px solid #1e2bfa;
+    }
+    #root .\30 5-rerank-br-l { left: 0; border-left: 4px solid #1e2bfa; border-radius: 14px 0 0 14px; }
+    #root .\30 5-rerank-br-r { right: 0; border-right: 4px solid #1e2bfa; border-radius: 0 14px 14px 0; }
+  </style>
+
+  <div id="root" data-composition-id="05-rerank" data-width="1920" data-height="1080" data-start="0" data-duration="7">
+    <div id="05-rerank-bg" class="05-rerank-bg clip" data-start="0" data-duration="7" data-track-index="0"></div>
+
+    <div class="05-rerank-rail">
+      <div class="05-rerank-rail-line"></div>
+      <div class="05-rerank-rail-fill" id="05-rerank-railfill"></div>
+      <div class="05-rerank-pill 05-rerank-done" style="left:0px">1 Search</div>
+      <div class="05-rerank-pill 05-rerank-active" id="05-rerank-p2" style="left:377px">2 Merge</div>
+      <div class="05-rerank-pill" id="05-rerank-p3" style="left:754px">3 Rerank</div>
+      <div class="05-rerank-pill" style="left:1131px">4 Check</div>
+      <div class="05-rerank-pill" style="left:1508px">5 Answer</div>
+    </div>
+
+    <div class="05-rerank-title" id="05-rerank-title"><b>3</b> · Rerank</div>
+    <div class="05-rerank-sub" id="05-rerank-sub"><span class="05-rerank-w">A</span> <span class="05-rerank-w">second</span> <span class="05-rerank-w">model</span> <span class="05-rerank-w">reads</span> <span class="05-rerank-w">question</span> <span class="05-rerank-w">+</span> <span class="05-rerank-w">entry</span> <span class="05-rerank-w">side</span> <span class="05-rerank-w">by</span> <span class="05-rerank-w">side</span></div>
+
+    <div class="05-rerank-q" id="05-rerank-q">How long will I be on tamoxifen?</div>
+
+    <svg class="05-rerank-svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+      <path class="05-rerank-path" id="05-rerank-path0" d="M656 560 C 704 560, 700 296, 744 296" />
+      <path class="05-rerank-path" id="05-rerank-path1" d="M656 560 C 704 560, 700 428, 744 428" />
+      <path class="05-rerank-path" id="05-rerank-path2" d="M656 560 C 704 560, 700 560, 744 560" />
+      <path class="05-rerank-path" id="05-rerank-path3" d="M656 560 C 704 560, 700 692, 744 692" />
+      <path class="05-rerank-path" id="05-rerank-path4" d="M656 560 C 704 560, 700 824, 744 824" />
+    </svg>
+    <div class="05-rerank-qdot" id="05-rerank-qdot"></div>
+
+    <div class="05-rerank-card" id="05-rerank-card0" style="top:240px">
+      <div class="05-rerank-ct">How long do I need to take hormone therapy?</div>
+      <div class="05-rerank-track"><span class="05-rerank-fill"></span></div>
+      <div class="05-rerank-top" id="05-rerank-top">#1</div>
+    </div>
+    <div class="05-rerank-card" id="05-rerank-card1" style="top:372px">
+      <div class="05-rerank-ct">Does tamoxifen affect menstrual cycles?</div>
+      <div class="05-rerank-track"><span class="05-rerank-fill"></span></div>
+    </div>
+    <div class="05-rerank-card" id="05-rerank-card2" style="top:504px">
+      <div class="05-rerank-ct">Can I, or should I, take it for life to prevent a relapse?</div>
+      <div class="05-rerank-track"><span class="05-rerank-fill"></span></div>
+    </div>
+    <div class="05-rerank-card" id="05-rerank-card3" style="top:636px">
+      <div class="05-rerank-ct">Does tamoxifen affect bones or muscles?</div>
+      <div class="05-rerank-track"><span class="05-rerank-fill"></span></div>
+    </div>
+    <div class="05-rerank-card" id="05-rerank-card4" style="top:768px">
+      <div class="05-rerank-ct">Does fatigue improve over time?</div>
+      <div class="05-rerank-track"><span class="05-rerank-fill"></span></div>
+    </div>
+
+    <div class="05-rerank-lens" id="05-rerank-lens">
+      <div class="05-rerank-br 05-rerank-br-l"></div>
+      <div class="05-rerank-br 05-rerank-br-r"></div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      window.__timelines = window.__timelines || {};
+      var root = document.querySelector('[data-composition-id="05-rerank"]');
+      var byId = function (id) { return root.querySelector('[id="' + id + '"]'); };
+      var tl = gsap.timeline({ paused: true });
+
+      var COBALT = "#1e2bfa", CREAM = "#fdfae7";
+      var SLOT = 132;                       // card pitch (112 + 20 gap)
+      var SCORES = [0.92, 0.38, 0.66, 0.22, 0.30]; // relevance bar lengths (visual only)
+      var NEW_SLOT = [0, 2, 1, 4, 3];       // order after rerank, by bar length
+
+      var cards = [], fills = [], texts = [], tracks = [], paths = [];
+      for (var i = 0; i < 5; i++) {
+        var c = byId("05-rerank-card" + i);
+        cards.push(c);
+        fills.push(c.querySelector(".\\30 5-rerank-fill"));
+        texts.push(c.querySelector(".\\30 5-rerank-ct"));
+        tracks.push(c.querySelector(".\\30 5-rerank-track"));
+        var p = byId("05-rerank-path" + i);
+        var len = p.getTotalLength();
+        p.style.strokeDasharray = len;
+        p.style.strokeDashoffset = len;
+        paths.push({ el: p, len: len });
+      }
+      var lens = byId("05-rerank-lens");
+      var top1 = byId("05-rerank-top");
+
+      // ---------- Scene 1 (0.0–1.2s): rail advances, title, chips morph into cards ----------
+      tl.fromTo(byId("05-rerank-p2"), { backgroundColor: COBALT, color: CREAM },
+        { backgroundColor: CREAM, color: COBALT, duration: 0.45, ease: "power2.inOut" }, 0.1);
+      tl.fromTo(byId("05-rerank-p3"), { backgroundColor: CREAM, color: "#9a9a9a", borderColor: "rgba(30,43,250,0.2)" },
+        { backgroundColor: COBALT, color: CREAM, borderColor: COBALT, duration: 0.45, ease: "power2.inOut" }, 0.3);
+      tl.fromTo(byId("05-rerank-railfill"), { scaleX: 0.25 }, { scaleX: 0.5, duration: 0.6, ease: "power2.inOut" }, 0.1);
+
+      tl.fromTo(byId("05-rerank-title"), { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 0.15);
+      tl.fromTo(byId("05-rerank-q"), { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.5, ease: "power2.out" }, 0.05);
+      tl.fromTo(byId("05-rerank-qdot"), { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power2.out" }, 0.45);
+
+      // card-morph-anchor: pill chips (half size, full pill radius, deeper tint) grow into tinted cards
+      cards.forEach(function (c, k) {
+        var t = 0.15 + k * 0.08;
+        tl.fromTo(c,
+          { opacity: 0, x: -36, scale: 0.5, borderRadius: 112, backgroundColor: "#dcdbea" },
+          { opacity: 1, x: 0, scale: 1, borderRadius: 14, backgroundColor: "#f4f2e8",
+            duration: 0.85, ease: "power2.inOut" }, t);
+        tl.fromTo(tracks[k], { opacity: 0 }, { opacity: 1, duration: 0.35, ease: "power1.out" }, t + 0.55);
+      });
+
+      // ---------- Scene 2 (1.2–4.8s): reading bracket pairs question with each card; bars fill ----------
+      tl.fromTo(root.querySelectorAll(".\\30 5-rerank-w"), { opacity: 0, y: 14 },
+        { opacity: 1, y: 0, duration: 0.4, ease: "power2.out", stagger: 0.06 }, 1.25);
+
+      tl.fromTo(lens, { opacity: 0, y: 0, scale: 0.97 }, { opacity: 1, scale: 1, duration: 0.25, ease: "power2.out" }, 1.3);
+
+      var READ0 = 1.45, READ_STEP = 0.65;
+      for (var j = 0; j < 5; j++) {
+        var t0 = READ0 + j * READ_STEP;
+        if (j > 0) {
+          tl.to(lens, { y: j * SLOT, duration: 0.28, ease: "power2.inOut" }, t0 - 0.1);
+          tl.to(paths[j - 1].el, { opacity: 0, duration: 0.2, ease: "power1.in" }, t0 - 0.1);
+        }
+        tl.fromTo(paths[j].el, { strokeDashoffset: paths[j].len, opacity: 1 },
+          { strokeDashoffset: 0, duration: 0.25, ease: "power2.out" }, t0);
+        tl.fromTo(fills[j], { scaleX: 0 }, { scaleX: SCORES[j], duration: 0.45, ease: "power2.out" }, t0 + 0.12);
+      }
+      var readEnd = READ0 + 4 * READ_STEP + 0.6;  // ~4.65s
+      tl.to(lens, { opacity: 0, duration: 0.2, ease: "power1.in" }, readEnd);
+      tl.to(paths[4].el, { opacity: 0, duration: 0.2, ease: "power1.in" }, readEnd);
+
+      // ---------- Scene 3 (4.8–7.0s): reorder by bar length; winner lifts to #1 ----------
+      var RE = 4.85;
+      cards.forEach(function (c, k) {
+        var dy = (NEW_SLOT[k] - k) * SLOT;
+        if (dy !== 0) tl.to(c, { y: dy, duration: 0.8, ease: "power2.inOut" }, RE);
+      });
+      tl.to(cards[0], { scale: 1.025, borderColor: COBALT, backgroundColor: "#ebe9e8",
+        duration: 0.6, ease: "power2.out" }, RE + 0.2);
+      tl.fromTo(top1, { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.4, ease: "back.out(1.6)" }, RE + 0.55);
+      tl.to(cards.slice(1), { opacity: 0.45, duration: 0.5, ease: "power1.out" }, RE + 0.75);
+
+      // pad to the fixed 7s duration (hold)
+      tl.set({}, {}, 7);
+
+      window.__timelines["05-rerank"] = tl;
+    })();
+  </script>
+</template>
