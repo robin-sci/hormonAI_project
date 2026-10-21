@@ -1,0 +1,16 @@
+How hormonAI answers a question (pipeline as of October 2026)
+
+hormonAI is a bilingual (English/French) chatbot for patients on adjuvant hormone therapy for breast cancer. It answers only from a curated knowledge base of 180 FAQ entries (111 English, 69 French). By default nothing is generated: the answer is the knowledge-base text, quoted verbatim, with its source.
+
+Ahead of time (ingestion): every FAQ entry is turned into three "meaning fingerprints" (embeddings: the question alone, question + answer, question + alternative wordings) and a keyword index (BM25).
+
+Per question:
+1. Find candidates: four searches run in parallel and each returns its top 40 entries - keyword (BM25), meaning of the question, meaning of question + answer, meaning of the question + alternative wordings.
+2. Merge rankings with Reciprocal Rank Fusion: each entry scores 1/(60 + rank) per search; entries ranked high in several searches win.
+3. Rerank: a cross-encoder model reads the question and each of the top 5 entries side by side and scores how well each one answers it.
+4. Answer or decline: answer only if the best entry's score clears a threshold, or if it contains a rare, specific word from the question (like a drug name) and is still close in meaning. Statistics questions need a source that contains numbers. If only the other language has a match, show it verbatim with an "only available in French/English" notice - never machine-translated. Otherwise decline politely and suggest speaking with the oncology team.
+5. Build the answer from up to 3 matching entries: a fixed empathy sentence plus the entries quoted verbatim. Optionally (off by default) a local LLM (Ollama, llama3.2) rewords only that text more warmly, adding nothing; if it is unavailable, the verbatim answer is shown and the user is told.
+6. Guardrail: patient-mortality wording is rephrased into survival language.
+7. Show the answer, with its sources in a separate "Sources used for this answer" panel.
+
+Everything runs locally: models, indexes and the optional LLM.

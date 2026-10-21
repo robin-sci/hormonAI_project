@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "preferences": {
+    "destination": {
+      "value": "youtube",
+      "confirmed_in": [
+        "hormonai-pipeline-explained"
+      ],
+      "updated_at": "2026-10-21T14:44:45.599Z"
+    },
+    "aspect": {
+      "value": "1920x1080",
+      "confirmed_in": [
+        "hormonai-pipeline-explained"
+      ],
+      "updated_at": "2026-10-21T14:44:45.649Z"
+    },
+    "language": {
+      "value": "en",
+      "confirmed_in": [
+        "hormonai-pipeline-explained"
+      ],
+      "updated_at": "2026-10-21T14:44:45.700Z"
+    },
+    "flow": {
+      "value": "automation",
+      "confirmed_in": [
+        "hormonai-pipeline-explained"
+      ],
+      "updated_at": "2026-10-21T14:44:45.749Z"
+    },
+    "storyboard": {
+      "value": "yes",
+      "confirmed_in": [
+        "hormonai-pipeline-explained"
+      ],
+      "updated_at": "2026-10-21T14:44:45.797Z"
+    },
+    "style_preset.faceless-explainer": {
+      "value": "blue-professional",
+      "confirmed_in": [
+        "hormonai-pipeline-explained"
+      ],
+      "updated_at": "2026-10-21T14:45:10.860Z"
+    }
+  },
+  "sightings": {}
+}
