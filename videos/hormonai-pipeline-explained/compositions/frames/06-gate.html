@@ -25,9 +25,9 @@
     .f06-gate-rail {
       position: absolute;
       left: 96px;
-      top: 52px;
+      top: 40px;
       width: 1728px;
-      height: 56px;
+      height: 44px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -36,14 +36,15 @@
       position: absolute;
       left: 0;
       right: 0;
-      top: 27px;
+      top: 21px;
       height: 2px;
       background: rgba(30, 43, 250, 0.2);
     }
     .f06-gate-step {
       position: relative;
-      width: 210px;
-      height: 56px;
+      width: 176px;
+      height: 44px;
+      box-sizing: border-box;
       border-radius: 100px;
       border: 1.5px solid rgba(30, 43, 250, 0.2);
       background: #fdfae7;
@@ -52,7 +53,7 @@
       align-items: center;
       justify-content: center;
     }
-    .f06-gate-step.f06-gate-done { background: #f5f2e5; }
+    .f06-gate-step.f06-gate-done { background: #ebe9e9; }
     .f06-gate-step-fill {
       position: absolute;
       inset: 0;
@@ -64,23 +65,23 @@
     .f06-gate-step-label {
       position: relative;
       font-family: "Space Grotesk", sans-serif;
-      font-weight: 600;
-      font-size: 22px;
+      font-weight: 500;
+      font-size: 18px;
       letter-spacing: 0.01em;
       color: #1e2bfa;
       white-space: nowrap;
     }
     .f06-gate-step-label b {
-      font-weight: 700;
-      margin-right: 8px;
+      font-weight: 500;
+      margin-right: 6px;
     }
-    .f06-gate-upcoming .f06-gate-step-label { color: #9a9a9a; }
+    .f06-gate-upcoming .f06-gate-step-label { color: #6b6b6b; }
 
     /* ---------- step title ---------- */
     .f06-gate-title {
       position: absolute;
       left: 96px;
-      top: 150px;
+      top: 124px;
       font-family: "Space Grotesk", sans-serif;
       font-weight: 600;
       font-size: 50px;
@@ -288,15 +289,15 @@
   </style>
 
   <div id="root" data-composition-id="06-gate" data-start="0" data-duration="10" data-width="1920" data-height="1080">
-    <div class="f06-gate-ground clip" data-start="0" data-duration="10" data-track-index="0"></div>
+    <div id="f06-gate-ground" class="f06-gate-ground clip" data-start="0" data-duration="10" data-track-index="0"></div>
 
     <!-- progress rail -->
     <div class="f06-gate-rail">
       <div class="f06-gate-rail-line"></div>
       <div class="f06-gate-step f06-gate-done"><span class="f06-gate-step-label"><b>1</b>Search</span></div>
       <div class="f06-gate-step f06-gate-done"><span class="f06-gate-step-label"><b>2</b>Merge</span></div>
-      <div class="f06-gate-step" id="f06-gate-step3"><div class="f06-gate-step-fill"></div><span class="f06-gate-step-label"><b>3</b>Rerank</span></div>
-      <div class="f06-gate-step" id="f06-gate-step4"><div class="f06-gate-step-fill"></div><span class="f06-gate-step-label"><b>4</b>Check</span></div>
+      <div class="f06-gate-step" id="f06-gate-step3"><div class="f06-gate-step-fill" id="f06-gate-s3fill"></div><span class="f06-gate-step-label" id="f06-gate-s3label"><b>3</b>Rerank</span></div>
+      <div class="f06-gate-step f06-gate-upcoming" id="f06-gate-step4"><div class="f06-gate-step-fill" id="f06-gate-s4fill"></div><span class="f06-gate-step-label" id="f06-gate-s4label"><b>4</b>Check</span></div>
       <div class="f06-gate-step f06-gate-upcoming"><span class="f06-gate-step-label"><b>5</b>Answer</span></div>
     </div>
 
@@ -306,14 +307,14 @@
     <!-- exit paths + row outlines (svg-path-draw) -->
     <svg class="f06-gate-svg" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg">
       <path class="f06-gate-faint" id="f06-gate-path1" d="M 584 562 C 700 562 700 348 820 348" />
-      <path class="f06-gate-faint" id="f06-gate-path2" d="M 584 562 C 700 562 700 548 820 548" />
-      <path class="f06-gate-faint" id="f06-gate-path3" d="M 584 562 C 700 562 700 770 820 770" />
+      <path class="f06-gate-faint" id="f06-gate-path2" d="M 584 562 C 700 562 700 532 820 532" />
+      <path class="f06-gate-faint" id="f06-gate-path3" d="M 584 562 C 700 562 700 740 820 740" />
       <rect class="f06-gate-faint" id="f06-gate-out1" x="820" y="262" width="1004" height="172" rx="14" />
-      <rect class="f06-gate-faint" id="f06-gate-out2" x="820" y="452" width="1004" height="192" rx="14" />
-      <rect class="f06-gate-faint" id="f06-gate-out3" x="820" y="662" width="1004" height="216" rx="14" />
+      <rect class="f06-gate-faint" id="f06-gate-out2" x="820" y="452" width="1004" height="160" rx="14" />
+      <rect class="f06-gate-faint" id="f06-gate-out3" x="820" y="632" width="1004" height="216" rx="14" />
       <path class="f06-gate-lit" id="f06-gate-lit1" d="M 584 562 C 700 562 700 348 820 348" />
-      <path class="f06-gate-lit-soft" id="f06-gate-lit2" d="M 584 562 C 700 562 700 548 820 548" />
-      <path class="f06-gate-lit-soft" id="f06-gate-lit3" d="M 584 562 C 700 562 700 770 820 770" />
+      <path class="f06-gate-lit-soft" id="f06-gate-lit2" d="M 584 562 C 700 562 700 532 820 532" />
+      <path class="f06-gate-lit-soft" id="f06-gate-lit3" d="M 584 562 C 700 562 700 740 820 740" />
     </svg>
 
     <!-- checkpoint gate -->
@@ -337,7 +338,7 @@
     </div>
 
     <!-- exit 2: only in the other language -->
-    <div class="f06-gate-row" style="top: 452px; height: 192px;">
+    <div class="f06-gate-row" style="top: 452px; height: 160px;">
       <div class="f06-gate-row-fill" id="f06-gate-fill2"></div>
       <div class="f06-gate-icon" id="f06-gate-icon2">
         <svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
@@ -354,7 +355,7 @@
     </div>
 
     <!-- exit 3: nothing fits -->
-    <div class="f06-gate-row" style="top: 662px; height: 216px;">
+    <div class="f06-gate-row" style="top: 632px; height: 216px;">
       <div class="f06-gate-row-fill" id="f06-gate-fill3"></div>
       <div class="f06-gate-icon" id="f06-gate-icon3">
         <svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
@@ -401,17 +402,15 @@
 
       // ---- Scene 1 (0.0-1.5s): rail advances, title, card slides into the gate, exits draw as faint outlines ----
       var s3 = $("step3"), s4 = $("step4");
-      var s3fill = s3.querySelector(".f06-gate-step-fill");
-      var s3label = s3.querySelector(".f06-gate-step-label");
-      var s4fill = s4.querySelector(".f06-gate-step-fill");
-      var s4label = s4.querySelector(".f06-gate-step-label");
+      var s3fill = $("s3fill"), s3label = $("s3label");
+      var s4fill = $("s4fill"), s4label = $("s4label");
       // "3 Rerank" starts active (solid) and turns to a done outline
       tl.fromTo(s3fill, { opacity: 1 }, { opacity: 0, duration: 0.45, ease: "power2.out" }, 0.1);
       tl.fromTo(s3label, { color: CREAM }, { color: COBALT, duration: 0.45, ease: "power2.out" }, 0.1);
-      tl.fromTo(s3, { backgroundColor: CREAM }, { backgroundColor: "#f5f2e5", duration: 0.45, ease: "power2.out" }, 0.1);
+      tl.fromTo(s3, { backgroundColor: CREAM }, { backgroundColor: "#ebe9e9", duration: 0.45, ease: "power2.out" }, 0.1);
       // "4 Check" fills cobalt from the left
-      tl.fromTo(s4fill, { opacity: 1, scaleX: 0 }, { scaleX: 1, duration: 0.55, ease: "power3.out" }, 0.3);
-      tl.fromTo(s4label, { color: "#9a9a9a" }, { color: CREAM, duration: 0.35, ease: "power2.out" }, 0.4);
+      tl.fromTo(s4fill, { opacity: 1, scaleX: 0 }, { opacity: 1, scaleX: 1, duration: 0.55, ease: "power3.out" }, 0.3);
+      tl.fromTo(s4label, { color: "#6b6b6b" }, { color: CREAM, duration: 0.35, ease: "power2.out" }, 0.4);
 
       tl.fromTo($("title"), { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 0.15);
 
